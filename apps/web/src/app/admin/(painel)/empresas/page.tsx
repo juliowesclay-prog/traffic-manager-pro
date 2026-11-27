@@ -26,25 +26,40 @@ export default async function CompaniesPage() {
             <caption className="sr-only">Empresas cadastradas</caption>
             <thead className="bg-navy-50 text-sm text-navy">
               <tr>
-                <th scope="col" className="px-4 py-3">Empresa</th>
-                <th scope="col" className="px-4 py-3">Pessoas com acesso</th>
-                <th scope="col" className="px-4 py-3">Chaves da API</th>
-                <th scope="col" className="px-4 py-3">Situação</th>
+                <th scope="col" className="px-4 py-3">
+                  Empresa
+                </th>
+                <th scope="col" className="px-4 py-3">
+                  Pessoas com acesso
+                </th>
+                <th scope="col" className="px-4 py-3">
+                  Chaves da API
+                </th>
+                <th scope="col" className="px-4 py-3">
+                  Situação
+                </th>
               </tr>
             </thead>
             <tbody>
               {companies.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-ink-soft">Nenhuma empresa ainda.</td>
+                  <td colSpan={4} className="px-4 py-6 text-ink-soft">
+                    Nenhuma empresa ainda.
+                  </td>
                 </tr>
               ) : null}
               {companies.map((c) => (
                 <tr key={c.id} className="border-t border-line">
                   <td className="px-4 py-3">
-                    <Link href={`/admin/empresas/${c.id}`} className="font-bold text-navy underline underline-offset-4">
+                    <Link
+                      href={`/admin/empresas/${c.id}`}
+                      className="font-bold text-navy underline underline-offset-4"
+                    >
                       {c.name}
                     </Link>
-                    {c.isDemo ? <span className="ml-2 rounded bg-amber-100 px-2 text-sm font-bold">DEMO</span> : null}
+                    {c.isDemo ? (
+                      <span className="ml-2 rounded bg-amber-100 px-2 text-sm font-bold">DEMO</span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3">{c._count.members}</td>
                   <td className="px-4 py-3">{c._count.apiKeys}</td>
@@ -55,7 +70,7 @@ export default async function CompaniesPage() {
           </table>
         </Card>
         <Card className="p-6">
-          <h2 className="mb-4 font-display text-xl font-extrabold text-navy">Nova empresa</h2>
+          <h2 className="mb-4 font-display text-base font-semibold text-ink">Nova empresa</h2>
           <CreateCompanyForm />
         </Card>
       </div>

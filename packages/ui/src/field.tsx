@@ -24,12 +24,12 @@ export function Field({
 
   return (
     <div className={cn("flex min-w-0 flex-col gap-2", className)}>
-      <label htmlFor={inputId} className="text-lg font-bold text-navy">
+      <label htmlFor={inputId} className="text-sm font-semibold text-ink">
         {label}
         {props.required ? null : <span className="font-normal text-ink-soft"> (opcional)</span>}
       </label>
       {hint ? (
-        <p id={hintId} className="text-base text-ink-soft">
+        <p id={hintId} className="text-sm text-ink-soft">
           {hint}
         </p>
       ) : null}
@@ -38,13 +38,13 @@ export function Field({
         aria-invalid={error ? true : undefined}
         aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
         className={cn(
-          "min-h-14 w-full min-w-0 rounded-xl border-2 bg-white px-4 text-lg text-ink",
-          error ? "border-red" : "border-slate-400 focus:border-navy",
+          "min-h-11 w-full min-w-0 rounded-lg border bg-white px-3 text-base text-ink",
+          error ? "border-red" : "border-slate-300 focus:border-accent",
         )}
         {...props}
       />
       {error ? (
-        <p id={errorId} className="flex items-center gap-2 text-base font-bold text-red-dark">
+        <p id={errorId} className="flex items-center gap-2 text-sm font-semibold text-red-dark">
           <span aria-hidden="true">⚠</span> {error}
         </p>
       ) : null}

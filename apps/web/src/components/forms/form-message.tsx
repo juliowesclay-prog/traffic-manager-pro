@@ -20,7 +20,7 @@ export function FormMessage({ message }: { message?: string | null }) {
       ref={ref}
       tabIndex={-1}
       role="alert"
-      className="rounded-2xl border-2 border-red/40 bg-red-50 p-4 text-lg font-bold text-red-dark"
+      className="rounded-xl border border-red/40 bg-red-50 p-4 text-lg font-bold text-red-dark"
     >
       <span aria-hidden="true">⚠ </span>
       {message}

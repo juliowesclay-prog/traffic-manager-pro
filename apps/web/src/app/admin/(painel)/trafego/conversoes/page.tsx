@@ -7,7 +7,6 @@ import { AdminPageTitle } from "@/components/admin/page-title";
 import { requireCompanyStaff } from "@/server/auth";
 import { activeConnection } from "@/server/traffic/connection";
 import { conversionsOverview } from "@/server/traffic/conversions";
-import { TrafficTabs } from "../tabs";
 import { CapiSettingsForm, SendNowButton } from "./forms";
 
 export const metadata: Metadata = { title: "Conversões" };
@@ -35,12 +34,11 @@ export default async function ConversionsPage() {
         title="Conversões"
         subtitle="Avisar a Meta dos cadastros e vendas que vieram dos anúncios"
       />
-      <TrafficTabs />
 
       {account?.isDemo ? (
         <p
           role="note"
-          className="mb-6 rounded-2xl border-2 border-amber-500 bg-amber-50 p-4 font-bold text-amber-950"
+          className="mb-6 rounded-xl border border-amber-400/70 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900"
         >
           DEMO — Meta simulada. Os eventos não saem do computador.
         </p>
@@ -51,9 +49,9 @@ export default async function ConversionsPage() {
           <ShieldCheck aria-hidden="true" className="mt-1 size-6 shrink-0 text-navy" />
           <div className="grid gap-2 text-base">
             <p>
-              Quando alguém que <strong>clicou num anúncio</strong> se cadastra ou faz a primeira
-              compra (informados pela fonte de vendas), o Traffic Manager Pro avisa a Meta. Assim a Meta aprende quem compra e mostra os anúncios para
-              pessoas parecidas.
+              Quando alguém que <strong>clicou num anúncio</strong> se cadastra ou faz a primeira compra
+              (informados pela fonte de vendas), o Traffic Manager Pro avisa a Meta. Assim a Meta aprende quem
+              compra e mostra os anúncios para pessoas parecidas.
             </p>
             <p>
               <strong>O que vai:</strong> o tipo (cadastro ou venda), a hora, o valor da venda, a página de
@@ -68,7 +66,7 @@ export default async function ConversionsPage() {
       </Card>
 
       <Card className="mt-6" data-testid="capi-config">
-        <h2 className="text-xl font-bold text-navy">Configuração</h2>
+        <h2 className="font-display text-base font-semibold text-ink">Configuração</h2>
         <dl className="mt-3 grid gap-x-6 gap-y-2 text-base sm:grid-cols-3">
           <div>
             <dt className="text-sm text-ink-soft">Envio</dt>
@@ -97,7 +95,7 @@ export default async function ConversionsPage() {
         ) : null}
         {canApprove ? (
           <details className="mt-3">
-            <summary className="min-h-12 cursor-pointer py-3 font-bold text-navy">
+            <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-ink">
               Alterar configuração
             </summary>
             <p className="mt-2 rounded-2xl bg-amber-50 p-3 text-base text-amber-950">
@@ -116,7 +114,7 @@ export default async function ConversionsPage() {
       </Card>
 
       <Card className="mt-6">
-        <h2 className="text-xl font-bold text-navy">Últimos 30 dias</h2>
+        <h2 className="font-display text-base font-semibold text-ink">Últimos 30 dias</h2>
         <dl className="mt-3 grid grid-cols-2 gap-4 text-base sm:grid-cols-4" data-testid="capi-contagem">
           {(["ENVIADO", "PENDENTE", "ERRO", "DESCARTADO"] as const).map((st) => (
             <div key={st}>
@@ -138,7 +136,7 @@ export default async function ConversionsPage() {
       </Card>
 
       <Card className="mt-6" data-testid="capi-eventos">
-        <h2 className="text-xl font-bold text-navy">Eventos recentes</h2>
+        <h2 className="font-display text-base font-semibold text-ink">Eventos recentes</h2>
         {o.recent.length ? (
           <ul className="mt-3 grid gap-3">
             {o.recent.map((e) => (

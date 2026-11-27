@@ -18,7 +18,7 @@ export const BRAND: SiteSettings = {
   name: "Traffic Manager Pro",
   tagline: "Tráfego pago sincronizado com a Meta",
   logoUrl: "/brand/logo.svg",
-  colors: { navy: "#10204A", red: "#C90201", saving: "#0E7A3E" },
+  colors: { navy: "#121826", red: "#C8323B", saving: "#0F8A5F" },
 };
 
 export const getSiteSettings = cache(async (): Promise<SiteSettings> => BRAND);

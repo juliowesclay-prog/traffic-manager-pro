@@ -16,7 +16,7 @@ export interface RoleOption {
 function RoleChecks({ options, selected = [] }: { options: RoleOption[]; selected?: string[] }) {
   return (
     <fieldset className="grid gap-3">
-      <legend className="mb-2 text-lg font-bold text-navy">Perfis de acesso</legend>
+      <legend className="mb-2 text-base font-semibold text-ink">Perfis de acesso</legend>
       {options.map((o) => (
         <Checkbox
           key={o.value}

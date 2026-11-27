@@ -19,7 +19,6 @@ import { requireCompanyStaff } from "@/server/auth";
 import { campaignsReport, type Metrics } from "@/server/traffic/report";
 import { Eye, MousePointerClick, ShoppingCart, Users, Wallet } from "lucide-react";
 import { SyncIntervalForm, SyncNowButton } from "../forms";
-import { TrafficTabs } from "../tabs";
 
 export const metadata: Metadata = { title: "Campanhas" };
 
@@ -91,11 +90,10 @@ export default async function CampaignsPage({
   return (
     <>
       <AdminPageTitle title="Campanhas" subtitle="Facebook e Instagram Ads da conta escolhida" />
-      <TrafficTabs />
 
       {!r.account ? (
         <Card>
-          <p className="text-lg">
+          <p className="text-base">
             {r.connected ? "Escolha a conta de anúncios" : "Conecte a conta da Meta"} para ver as campanhas.{" "}
             <Link href="/admin/trafego" className="font-bold text-navy underline">
               Ir para Conexão
@@ -107,7 +105,7 @@ export default async function CampaignsPage({
           {r.account.isDemo ? (
             <p
               role="note"
-              className="mb-6 rounded-2xl border-2 border-amber-500 bg-amber-50 p-4 font-bold text-amber-950"
+              className="mb-6 rounded-xl border border-amber-400/70 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900"
             >
               DEMO — números simulados de teste. Não use para decisões.
             </p>
@@ -119,7 +117,7 @@ export default async function CampaignsPage({
           ) : null}
 
           <Card data-testid="atualizacao">
-            <h2 className="text-xl font-bold text-navy">{r.account.name}</h2>
+            <h2 className="font-display text-base font-semibold text-ink">{r.account.name}</h2>
             <p className="mt-1 text-base text-ink-soft" data-testid="ultima-atualizacao">
               {r.lastOk?.finishedAt
                 ? `Última atualização completa: ${when(r.lastOk.finishedAt)}`
@@ -151,7 +149,7 @@ export default async function CampaignsPage({
                 id="periodo"
                 name="periodo"
                 defaultValue={days}
-                className="min-h-12 rounded-xl border-2 border-line bg-white px-3 text-base"
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
               >
                 {REPORT_PERIODS.map((d) => (
                   <option key={d} value={d}>
@@ -168,7 +166,7 @@ export default async function CampaignsPage({
                 id="situacao"
                 name="situacao"
                 defaultValue={filter}
-                className="min-h-12 rounded-xl border-2 border-line bg-white px-3 text-base"
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
               >
                 <option value="">Todas</option>
                 <option value="ativa">Ativas</option>
@@ -178,7 +176,7 @@ export default async function CampaignsPage({
             </div>
             <button
               type="submit"
-              className="inline-flex min-h-12 items-center rounded-xl border-2 border-navy px-5 font-bold text-navy"
+              className="inline-flex min-h-11 items-center rounded-[10px] border border-slate-300 bg-white px-4 text-sm font-semibold text-ink hover:bg-navy-50"
             >
               Ver
             </button>
@@ -188,7 +186,7 @@ export default async function CampaignsPage({
             vendas reais (fonte de vendas) estão na aba Vendas.
           </p>
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 2xl:grid-cols-5">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <KpiCard
               testId="total-gasto"
               raw={r.totals.spend}
@@ -228,7 +226,7 @@ export default async function CampaignsPage({
             />
           </div>
 
-          <h2 className="mt-8 text-xl font-bold text-navy">Campanhas</h2>
+          <h2 className="mt-8 font-display text-base font-semibold text-ink">Campanhas</h2>
           {r.tree.filter((c) => !filter || c.situation === filter).length ? (
             <ul className="mt-3 grid gap-4" data-testid="campanhas">
               {r.tree
@@ -238,7 +236,7 @@ export default async function CampaignsPage({
                     <Card data-testid={`campanha-${c.externalId}`}>
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <h3 className="text-lg font-bold break-words text-navy">{c.name}</h3>
+                          <h3 className="text-base font-bold break-words text-navy">{c.name}</h3>
                           <p className="text-sm text-ink-soft">
                             Objetivo: {objectiveLabel(c.objective)} ·{" "}
                             {c.dailyBudget
@@ -262,7 +260,7 @@ export default async function CampaignsPage({
                       ) : null}
                       {c.adSets.length ? (
                         <details className="mt-3">
-                          <summary className="min-h-12 cursor-pointer py-3 font-bold text-navy">
+                          <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-ink">
                             Conjuntos e anúncios ({c.adSets.length})
                           </summary>
                           <ul className="grid gap-4 border-l-4 border-line pl-4">
@@ -316,7 +314,7 @@ export default async function CampaignsPage({
           )}
 
           <Card className="mt-6">
-            <h2 className="text-xl font-bold text-navy">Últimas atualizações</h2>
+            <h2 className="font-display text-base font-semibold text-ink">Últimas atualizações</h2>
             {r.runs.length ? (
               <ul className="mt-3 grid gap-2" data-testid="execucoes">
                 {r.runs.map((x) => (

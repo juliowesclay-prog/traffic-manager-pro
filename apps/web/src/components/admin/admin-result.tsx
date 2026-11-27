@@ -14,7 +14,7 @@ export function AdminResultMessage({
     <div className="grid gap-3">
       <ResultMessage result={result} />
       {result.ok && result.tempPassword ? (
-        <div className="rounded-2xl border-2 border-amber-500 bg-amber-50 p-4 text-amber-950">
+        <div className="rounded-xl border border-amber-400/70 bg-amber-50 p-4 text-sm text-amber-950">
           <p className="flex items-center gap-2 font-bold">
             <KeyRound aria-hidden="true" className="size-5" /> Senha provisória (anote agora — não será
             mostrada de novo):
