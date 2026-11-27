@@ -20,14 +20,26 @@ export const PERMISSIONS = [
   "traffic:read", // ver conexão, contas, campanhas e números
   "traffic:manage", // conectar/desconectar a Meta, escolher a conta e pedir ações
   "traffic:approve", // aprovar ações que aumentam o gasto, definir teto e ligar as ações
+  "marketing:read", // ver o módulo Marketing (biblioteca, kit da marca)
+  "marketing:manage", // enviar arquivos, criar e editar criativos e o kit da marca
+  "marketing:approve", // aprovar criativos e as informações oficiais da marca
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   SUPERADMIN: PERMISSIONS,
-  GESTOR: ["admin:access", "audit:read", "traffic:read", "traffic:manage", "traffic:approve"],
-  MARKETING: ["admin:access", "traffic:read", "traffic:manage"],
-  LEITURA: ["admin:access", "traffic:read"],
+  GESTOR: [
+    "admin:access",
+    "audit:read",
+    "traffic:read",
+    "traffic:manage",
+    "traffic:approve",
+    "marketing:read",
+    "marketing:manage",
+    "marketing:approve",
+  ],
+  MARKETING: ["admin:access", "traffic:read", "traffic:manage", "marketing:read", "marketing:manage"],
+  LEITURA: ["admin:access", "traffic:read", "marketing:read"],
 };
 
 export function permissionsOf(roles: readonly Role[]): Set<Permission> {

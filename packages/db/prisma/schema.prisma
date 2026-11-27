@@ -629,3 +629,184 @@ model MetaConversionEvent {
   @@index([companyId])
   @@map("meta_conversion_events")
 }
+
+// ─── Marketing IA (Etapa 1: kit da marca, arquivos e biblioteca de criativos) ─────────────────
+// Tudo separado por empresa. Os arquivos ficam no armazenamento privado (disco local ou R2); aqui fica
+// só o endereço interno (storageKey) e os dados conferidos no servidor.
+
+/// Marca de uma empresa (uma empresa pode ter mais de uma). A IA usa SÓ o que está aqui.
+model Brand {
+  id          String      @id @default(uuid()) @db.Uuid
+  companyId   String      @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  name        String
+  website     String?
+  /// Redes sociais: { instagram, facebook, tiktok, youtube, linkedin, whatsapp } (endereços).
+  socials     Json        @default("{}")
+  /// Informações institucionais (quem é a empresa).
+  about       String?
+  /// Cores oficiais em hexadecimal (#RRGGBB), na ordem: principal, secundária, apoio.
+  colors      String[]    @default([])
+  headingFont String?
+  bodyFont    String?
+  /// Chamadas para ação preferidas.
+  ctas        String[]    @default([])
+  logoAssetId String?     @unique @db.Uuid
+  logo        MediaAsset? @relation("BrandLogo", fields: [logoAssetId], references: [id], onDelete: SetNull)
+  isDemo      Boolean     @default(false)
+  createdById String      @db.Uuid
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  facts       BrandFact[]
+  creatives   Creative[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("brands")
+}
+
+enum BrandFactKind {
+  PRODUTO
+  SERVICO
+  BENEFICIO
+  DIFERENCIAL
+  PRECO
+  INSTITUCIONAL
+}
+
+enum BrandFactStatus {
+  RASCUNHO
+  APROVADO
+}
+
+/// Informação oficial da marca (produto, benefício, preço…). A IA só pode usar as APROVADAS.
+model BrandFact {
+  id           String          @id @default(uuid()) @db.Uuid
+  companyId    String          @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  brandId      String          @db.Uuid
+  brand        Brand           @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  kind         BrandFactKind
+  title        String
+  detail       String?
+  status       BrandFactStatus @default(RASCUNHO)
+  createdById  String          @db.Uuid
+  approvedById String?         @db.Uuid
+  approvedAt   DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([companyId])
+  @@index([brandId])
+  @@map("brand_facts")
+}
+
+enum CreativeKind {
+  IMAGEM
+  CARROSSEL
+  VIDEO
+}
+
+enum CreativeStatus {
+  RASCUNHO
+  EM_EDICAO
+  AGUARDANDO_APROVACAO
+  APROVADO
+  ENVIADO_META
+  ARQUIVADO
+}
+
+enum CreativeOrigin {
+  IMPORTADO
+  IA
+  CANVA
+}
+
+/// Criativo da biblioteca (imagem, carrossel ou vídeo). Cada alteração gera uma versão nova.
+model Creative {
+  id              String            @id @default(uuid()) @db.Uuid
+  companyId       String            @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  name            String
+  kind            CreativeKind
+  status          CreativeStatus    @default(RASCUNHO)
+  origin          CreativeOrigin    @default(IMPORTADO)
+  brandId         String?           @db.Uuid
+  brand           Brand?            @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  /// Campanha da Meta relacionada (opcional; id interno de meta_campaigns).
+  campaignId      String?           @db.Uuid
+  currentVersion  Int               @default(1)
+  /// Versão aprovada (a aprovação vale para uma versão; versão nova volta para edição).
+  approvedVersion Int?
+  approvedById    String?           @db.Uuid
+  approvedAt      DateTime?
+  createdById     String            @db.Uuid
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  isDemo          Boolean           @default(false)
+  versions        CreativeVersion[]
+
+  @@index([companyId, createdAt])
+  @@index([companyId, status])
+  @@map("creatives")
+}
+
+/// Versão de um criativo: o conjunto de arquivos (1 imagem, 2 a 10 páginas de carrossel ou 1 vídeo).
+model CreativeVersion {
+  id          String       @id @default(uuid()) @db.Uuid
+  companyId   String       @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  creativeId  String       @db.Uuid
+  creative    Creative     @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+  number      Int
+  note        String?
+  createdById String       @db.Uuid
+  createdAt   DateTime     @default(now())
+  assets      MediaAsset[]
+
+  @@unique([creativeId, number])
+  @@index([companyId])
+  @@map("creative_versions")
+}
+
+enum MediaKind {
+  IMAGEM
+  VIDEO
+}
+
+enum MediaStatus {
+  AGUARDANDO_ENVIO
+  PRONTO
+  REJEITADO
+}
+
+/// Arquivo enviado (imagem ou vídeo). Nunca público: só sai pelo servidor, com login e da empresa certa.
+model MediaAsset {
+  id           String           @id @default(uuid()) @db.Uuid
+  companyId    String           @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  /// Endereço interno no armazenamento (<empresa>/<id>.<ext>). Nunca vem do usuário.
+  storageKey   String           @unique
+  originalName String
+  /// Tipo e tamanho DECLARADOS pelo navegador; os conferidos ficam em mimeType/sizeBytes.
+  declaredType String
+  declaredSize BigInt
+  mimeType     String?
+  sizeBytes    BigInt?
+  sha256       String?
+  kind         MediaKind
+  status       MediaStatus      @default(AGUARDANDO_ENVIO)
+  width        Int?
+  height       Int?
+  durationMs   Int?
+  rejectReason String?
+  /// "criativo" ou "logo".
+  purpose      String
+  versionId    String?          @db.Uuid
+  version      CreativeVersion? @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  /// Ordem dentro da versão (página do carrossel).
+  position     Int              @default(0)
+  brandLogoOf  Brand?           @relation("BrandLogo")
+  uploadedById String           @db.Uuid
+  createdAt    DateTime         @default(now())
+  readyAt      DateTime?
+
+  @@index([companyId, status])
+  @@index([versionId])
+  @@map("media_assets")
+}

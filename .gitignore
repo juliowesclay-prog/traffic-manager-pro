@@ -16,3 +16,6 @@ playwright-report/
 
 # Acessos de demonstração gerados localmente (nunca versionar)
 *.local.txt
+
+# Arquivos enviados ao Marketing (armazenamento local de desenvolvimento)
+.storage/
