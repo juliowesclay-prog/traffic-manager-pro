@@ -1,0 +1,351 @@
+enum MetaConnectionStatus {
+  ATIVA
+  DESCONECTADA
+}
+
+model MetaConnection {
+  id               String               @id @default(uuid()) @db.Uuid
+  provider         String
+  status           MetaConnectionStatus @default(ATIVA)
+  metaUserId       String
+  metaUserName     String
+  tokenEnc         String?
+  tokenExpiresAt   DateTime?
+  scopes           String[]             @default([])
+  connectedById    String               @db.Uuid
+  connectedAt      DateTime             @default(now())
+  lastCheckedAt    DateTime?
+  /// Último erro da Meta (sem dados sensíveis), ex.: chave inválida — pede reconexão.
+  lastError        String?
+  disconnectedAt   DateTime?
+  disconnectedById String?              @db.Uuid
+  accounts         MetaAdAccount[]
+
+  @@index([status])
+  @@map("meta_connections")
+}
+
+model MetaAdAccount {
+  id            String         @id @default(uuid()) @db.Uuid
+  connectionId  String         @db.Uuid
+  connection    MetaConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  /// ID da Meta, no formato act_123.
+  accountId     String
+  name          String
+  currency      String
+  timezone      String
+  /// account_status da Meta (1 = ativa, 2 = desativada, 101 = encerrada…).
+  accountStatus Int
+  businessName  String?
+  selected      Boolean        @default(false)
+  selectedById  String?        @db.Uuid
+  selectedAt    DateTime?
+  isDemo        Boolean        @default(false)
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([connectionId, accountId])
+  @@map("meta_ad_accounts")
+}
+
+model MetaOAuthState {
+  id        String    @id @default(uuid()) @db.Uuid
+  stateHash String    @unique
+  userId    String    @db.Uuid
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("meta_oauth_states")
+}
+
+model MetaCampaign {
+  id              String    @id @default(uuid()) @db.Uuid
+  accountId       String
+  externalId      String
+  name            String
+  objective       String?
+  status          String
+  effectiveStatus String
+  /// Centavos (a Meta devolve na menor unidade da moeda).
+  dailyBudget     Int?
+  lifetimeBudget  Int?
+  budgetRemaining Int?
+  startTime       DateTime?
+  stopTime        DateTime?
+  isDemo          Boolean   @default(false)
+  syncedAt        DateTime
+  /// Não veio mais na última sincronização (excluída na Meta).
+  missingSince    DateTime?
+
+  @@unique([accountId, externalId])
+  @@map("meta_campaigns")
+}
+
+model MetaAdSet {
+  id                 String    @id @default(uuid()) @db.Uuid
+  accountId          String
+  externalId         String
+  campaignExternalId String
+  name               String
+  status             String
+  effectiveStatus    String
+  dailyBudget        Int?
+  lifetimeBudget     Int?
+  optimizationGoal   String?
+  /// Resumo do público (idade, gênero, locais), sem dados de pessoas.
+  targetingSummary   String?
+  startTime          DateTime?
+  endTime            DateTime?
+  isDemo             Boolean   @default(false)
+  syncedAt           DateTime
+  missingSince       DateTime?
+
+  @@unique([accountId, externalId])
+  @@index([accountId, campaignExternalId])
+  @@map("meta_ad_sets")
+}
+
+model MetaAd {
+  id                 String    @id @default(uuid()) @db.Uuid
+  accountId          String
+  externalId         String
+  adSetExternalId    String
+  campaignExternalId String
+  creativeExternalId String?
+  name               String
+  status             String
+  effectiveStatus    String
+  isDemo             Boolean   @default(false)
+  syncedAt           DateTime
+  missingSince       DateTime?
+
+  @@unique([accountId, externalId])
+  @@index([accountId, adSetExternalId])
+  @@map("meta_ads")
+}
+
+model MetaCreative {
+  id           String   @id @default(uuid()) @db.Uuid
+  accountId    String
+  externalId   String
+  name         String?
+  title        String?
+  body         String?
+  callToAction String?
+  objectType   String?
+  /// Endereço da miniatura na Meta (expira; exibição na 8.4).
+  thumbnailUrl String?
+  isDemo       Boolean  @default(false)
+  syncedAt     DateTime
+
+  @@unique([accountId, externalId])
+  @@map("meta_creatives")
+}
+
+enum MetaLevel {
+  CAMPANHA
+  CONJUNTO
+  ANUNCIO
+}
+
+model MetaInsightDaily {
+  id            String    @id @default(uuid()) @db.Uuid
+  accountId     String
+  level         MetaLevel
+  objectId      String
+  /// Dia no fuso da conta de anúncios.
+  date          DateTime  @db.Date
+  spend         Int
+  impressions   Int
+  reach         Int
+  clicks        Int
+  linkClicks    Int
+  landingViews  Int       @default(0)
+  leads         Int       @default(0)
+  registrations Int       @default(0)
+  conversations Int       @default(0)
+  purchases     Int       @default(0)
+  /// Valor das compras informado pela Meta (centavos). A venda real é a do Prosed (8.3).
+  purchaseValue Int       @default(0)
+  actions       Json?
+  isDemo        Boolean   @default(false)
+  syncedAt      DateTime
+
+  @@unique([accountId, level, objectId, date])
+  @@index([accountId, level, date])
+  @@map("meta_insights_daily")
+}
+
+enum MetaSyncStatus {
+  EXECUTANDO
+  OK
+  PARCIAL
+  ERRO
+}
+
+enum MetaSyncTrigger {
+  MANUAL
+  AUTOMATICA
+}
+
+model MetaSyncRun {
+  id          String          @id @default(uuid()) @db.Uuid
+  accountId   String
+  trigger     MetaSyncTrigger
+  status      MetaSyncStatus  @default(EXECUTANDO)
+  since       DateTime        @db.Date
+  until       DateTime        @db.Date
+  counts      Json?
+  /// Mensagem segura para a tela (sem chaves nem detalhes internos).
+  error       String?
+  startedById String?         @db.Uuid
+  startedAt   DateTime        @default(now())
+  finishedAt  DateTime?
+
+  @@index([accountId, startedAt])
+  @@map("meta_sync_runs")
+}
+
+model MemberAttribution {
+  id                 String   @id @default(uuid()) @db.Uuid
+  memberId           String   @unique @db.Uuid
+  member             Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  source             String?
+  medium             String?
+  campaign           String?
+  term               String?
+  content            String?
+  /// IDs da Meta lidos dos parâmetros (só números).
+  campaignExternalId String?
+  adSetExternalId    String?
+  adExternalId       String?
+  fbclid             String?
+  landingPath        String?
+  clickedAt          DateTime
+  createdAt          DateTime @default(now())
+
+  @@index([campaignExternalId])
+  @@index([adExternalId])
+  @@map("member_attributions")
+}
+
+enum TrafficAnalysisStatus {
+  EXECUTANDO
+  OK
+  ERRO
+}
+
+model TrafficAnalysis {
+  id           String                @id @default(uuid()) @db.Uuid
+  accountId    String
+  periodDays   Int
+  /// "claude" ou "simulado".
+  provider     String
+  model        String
+  status       TrafficAnalysisStatus @default(EXECUTANDO)
+  input        Json
+  output       Json?
+  /// Mensagem segura para a tela (sem chaves nem detalhes internos).
+  error        String?
+  inputTokens  Int?
+  outputTokens Int?
+  isDemo       Boolean               @default(false)
+  createdById  String                @db.Uuid
+  createdAt    DateTime              @default(now())
+  finishedAt   DateTime?
+
+  @@index([accountId, createdAt])
+  @@map("traffic_analyses")
+}
+
+enum TrafficActionKind {
+  PAUSAR
+  REATIVAR
+  ORCAMENTO
+}
+
+enum TrafficActionStatus {
+  PENDENTE
+  EXECUTANDO
+  EXECUTADA
+  RECUSADA
+  CANCELADA
+  EXPIRADA
+  FALHOU
+}
+
+model TrafficAction {
+  id             String              @id @default(uuid()) @db.Uuid
+  accountId      String
+  level          MetaLevel
+  objectId       String
+  objectName     String
+  kind           TrafficActionKind
+  fromStatus     String
+  toStatus       String
+  /// Centavos.
+  fromBudget     Int?
+  toBudget       Int?
+  increasesSpend Boolean
+  totalBefore    Int
+  totalAfter     Int
+  capCents       Int?
+  reason         String
+  /// Análise da IA (8.5) que originou o pedido, se houver.
+  analysisId     String?             @db.Uuid
+  status         TrafficActionStatus
+  requestedById  String              @db.Uuid
+  requestedAt    DateTime            @default(now())
+  expiresAt      DateTime?
+  decidedById    String?             @db.Uuid
+  decidedAt      DateTime?
+  decisionNote   String?
+  executedAt     DateTime?
+  /// Mensagem segura para a tela (sem chaves nem detalhes internos).
+  error          String?
+  isDemo         Boolean             @default(false)
+
+  @@index([accountId, requestedAt])
+  @@index([status, expiresAt])
+  @@map("traffic_actions")
+}
+
+enum ConversionKind {
+  CADASTRO
+  VENDA
+}
+
+enum ConversionStatus {
+  PENDENTE
+  ENVIADO
+  ERRO
+  DESCARTADO
+}
+
+model MetaConversionEvent {
+  id                 String           @id @default(uuid()) @db.Uuid
+  eventId            String           @unique
+  kind               ConversionKind
+  memberId           String           @db.Uuid
+  eventTime          DateTime
+  /// Centavos (só venda).
+  valueCents         Int?
+  campaignExternalId String?
+  status             ConversionStatus @default(PENDENTE)
+  attempts           Int              @default(0)
+  nextAttemptAt      DateTime         @default(now())
+  /// Mensagem segura (sem chaves nem detalhes internos).
+  lastError          String?
+  sentAt             DateTime?
+  /// Enviado com código de teste (aparece só em "Eventos de teste" na Meta).
+  testMode           Boolean          @default(false)
+  isDemo             Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+
+  @@index([status, nextAttemptAt])
+  @@index([memberId])
+  @@index([createdAt])
+  @@map("meta_conversion_events")
+}
+

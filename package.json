@@ -1,0 +1,10 @@
+{
+  "name": "traffic-manager-pro",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "engines": { "node": ">=22.12 <23" },
+  "scripts": {
+    "test": "pnpm --filter @tmp/core test",
+    "typecheck": "pnpm --filter @tmp/core typecheck"
+  }
+}
