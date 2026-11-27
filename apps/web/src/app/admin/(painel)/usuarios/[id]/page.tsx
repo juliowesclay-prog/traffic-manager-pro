@@ -42,7 +42,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
       ) : null}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <h2 className="text-xl font-bold text-navy">Perfis</h2>
+          <h2 className="font-display text-base font-semibold text-ink">Perfis</h2>
           <div className="mt-4">
             <RolesForm
               userId={u.id}
@@ -53,7 +53,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
         </Card>
         <div className="grid gap-6">
           <Card>
-            <h2 className="text-xl font-bold text-navy">Acesso</h2>
+            <h2 className="font-display text-base font-semibold text-ink">Acesso</h2>
             <div className="mt-4 grid gap-6">
               <ManageStaffForm userId={u.id} op="reset-password" label="Gerar senha provisória" />
               <ManageStaffForm userId={u.id} op="reset-mfa" label="Reiniciar autenticador" />

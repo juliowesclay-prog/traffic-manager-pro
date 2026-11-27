@@ -52,11 +52,7 @@ export default async function StaffPage() {
                     </Link>
                     <span className="block text-sm text-ink-soft">{u.email}</span>
                   </td>
-                  <td className="px-4 py-3">
-                    {u.roles
-                      .map((r) => ROLE_LABELS[r.role as Role])
-                      .join(", ")}
-                  </td>
+                  <td className="px-4 py-3">{u.roles.map((r) => ROLE_LABELS[r.role as Role]).join(", ")}</td>
                   <td className="px-4 py-3">{u.mfaEnabledAt ? "Configurado" : "Pendente"}</td>
                   <td className="px-4 py-3">
                     {u.status === "BLOCKED" ? (
@@ -73,7 +69,7 @@ export default async function StaffPage() {
           </table>
         </Card>
         <Card>
-          <h2 className="text-xl font-bold text-navy">Novo usuário da equipe</h2>
+          <h2 className="font-display text-base font-semibold text-ink">Novo usuário da equipe</h2>
           <p className="mt-1 text-sm text-ink-soft">
             Uma senha provisória é gerada e mostrada uma única vez.
           </p>

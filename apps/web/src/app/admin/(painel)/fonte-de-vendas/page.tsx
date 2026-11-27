@@ -11,7 +11,9 @@ import { salesSourceOverview } from "@/server/sales-source";
 export const metadata: Metadata = { title: "Fonte de vendas" };
 
 const when = (d: Date | null) =>
-  d ? d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }) : "nunca";
+  d
+    ? d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })
+    : "nunca";
 
 export default async function SalesSourcePage() {
   const { company, roles } = await requireCompanyStaff("traffic:read");
@@ -34,15 +36,33 @@ export default async function SalesSourcePage() {
         subtitle={`Cadastros e vendas que os sistemas de ${company.name} enviam. É daqui que saem o CAC, o retorno e as conversões enviadas à Meta.`}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard icon={<UserPlus className="size-6" />} label="Cadastros (30 dias)" value={o.leads.toLocaleString("pt-BR")} />
-        <KpiCard icon={<Megaphone className="size-6" />} label="Cadastros vindos da Meta" value={o.leadsMeta.toLocaleString("pt-BR")} />
-        <KpiCard icon={<ShoppingCart className="size-6" />} label="Vendas (1ª compra, 30 dias)" value={o.sales.toLocaleString("pt-BR")} />
-        <KpiCard icon={<Wallet className="size-6" />} label="Receita (30 dias)" value={formatBRL(o.revenue)} />
+        <KpiCard
+          icon={<UserPlus className="size-6" />}
+          label="Cadastros (30 dias)"
+          value={o.leads.toLocaleString("pt-BR")}
+        />
+        <KpiCard
+          icon={<Megaphone className="size-6" />}
+          label="Cadastros vindos da Meta"
+          value={o.leadsMeta.toLocaleString("pt-BR")}
+        />
+        <KpiCard
+          icon={<ShoppingCart className="size-6" />}
+          label="Vendas (1ª compra, 30 dias)"
+          value={o.sales.toLocaleString("pt-BR")}
+        />
+        <KpiCard
+          icon={<Wallet className="size-6" />}
+          label="Receita (30 dias)"
+          value={formatBRL(o.revenue)}
+        />
       </div>
-      <p className="mt-4 text-ink-soft" data-testid="ultimo-envio">Último envio recebido: {when(o.lastReceivedAt)}</p>
+      <p className="mt-4 text-ink-soft" data-testid="ultimo-envio">
+        Último envio recebido: {when(o.lastReceivedAt)}
+      </p>
 
       <Card className="mt-8 grid gap-4 p-6">
-        <h2 className="font-display text-xl font-extrabold text-navy">Como conectar um sistema</h2>
+        <h2 className="font-display text-base font-semibold text-ink">Como conectar um sistema</h2>
         <ol className="grid list-decimal gap-2 pl-6">
           <li>
             {can(roles, "companies:manage") ? (
@@ -58,12 +78,12 @@ export default async function SalesSourcePage() {
             )}
           </li>
           <li>
-            No site, guarde o endereço completo de entrada (com <code>utm_*</code> e <code>fbclid</code>) quando o visitante
-            chega, e envie no cadastro como <code>origem</code>.
+            No site, guarde o endereço completo de entrada (com <code>utm_*</code> e <code>fbclid</code>)
+            quando o visitante chega, e envie no cadastro como <code>origem</code>.
           </li>
           <li>
-            Envie <code>cadastro</code> quando a pessoa se cadastra, <code>venda</code> quando um pagamento é confirmado e{" "}
-            <code>estorno</code> se for devolvido. Reenviar o mesmo <code>id</code> não duplica.
+            Envie <code>cadastro</code> quando a pessoa se cadastra, <code>venda</code> quando um pagamento é
+            confirmado e <code>estorno</code> se for devolvido. Reenviar o mesmo <code>id</code> não duplica.
           </li>
           <li>
             Nunca envie nome, CPF, telefone ou e-mail: o <code>id</code> é o código do cliente no seu sistema.
@@ -72,7 +92,10 @@ export default async function SalesSourcePage() {
         <pre className="overflow-x-auto rounded-xl bg-ink p-4 text-sm text-white">{example}</pre>
         <p className="text-sm text-ink-soft">
           Nos anúncios da Meta, cole em &ldquo;Parâmetros de URL&rdquo;:{" "}
-          <code>utm_source=facebook&amp;utm_medium=paid&amp;utm_campaign={"{{campaign.id}}"}&amp;utm_term={"{{adset.id}}"}&amp;utm_content={"{{ad.id}}"}</code>
+          <code>
+            utm_source=facebook&amp;utm_medium=paid&amp;utm_campaign={"{{campaign.id}}"}&amp;utm_term=
+            {"{{adset.id}}"}&amp;utm_content={"{{ad.id}}"}
+          </code>
         </p>
       </Card>
     </>

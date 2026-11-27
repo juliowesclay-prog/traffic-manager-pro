@@ -14,14 +14,17 @@ function Result({ result }: { result?: CompanyResult }) {
     <div className="grid gap-3">
       <ResultMessage result={result} />
       {result.ok && result.secret ? (
-        <div className="rounded-2xl border-2 border-amber-500 bg-amber-50 p-4 text-amber-950">
+        <div className="rounded-xl border border-amber-400/70 bg-amber-50 p-4 text-sm text-amber-950">
           <p className="flex items-center gap-2 font-bold">
-            <KeyRound aria-hidden="true" className="size-5" /> Chave da API (copie agora — não será mostrada de novo):
+            <KeyRound aria-hidden="true" className="size-5" /> Chave da API (copie agora — não será mostrada
+            de novo):
           </p>
           <p className="mt-2 select-all break-all font-mono text-base font-bold" data-testid="chave-api">
             {result.secret}
           </p>
-          <p className="mt-2 text-sm">Guarde no cofre do sistema que vai enviar as vendas. Nunca mande por e-mail ou chat.</p>
+          <p className="mt-2 text-sm">
+            Guarde no cofre do sistema que vai enviar as vendas. Nunca mande por e-mail ou chat.
+          </p>
         </div>
       ) : null}
     </div>
@@ -34,7 +37,13 @@ export function CreateCompanyForm() {
     <form onSubmit={action} className="grid gap-5">
       <Result result={result} />
       <Field label="Nome da empresa" name="name" required autoComplete="off" />
-      <Button type="submit" variant="primary" disabled={pending} icon={<Plus className="size-5" />} className="justify-self-start">
+      <Button
+        type="submit"
+        variant="primary"
+        disabled={pending}
+        icon={<Plus className="size-5" />}
+        className="justify-self-start"
+      >
         {pending ? "Criando…" : "Cadastrar empresa"}
       </Button>
     </form>

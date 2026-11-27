@@ -5,27 +5,28 @@ export type ButtonVariant = "primary" | "cta" | "secondary" | "whatsapp" | "ghos
 export type ButtonSize = "md" | "lg";
 
 /**
- * Botões grandes e fáceis de tocar (mínimo 48px; "lg" = 64px), sempre com texto.
- * - cta: vermelho da marca, para a ação principal da tela ("Quero ser associado").
- * - primary: azul-marinho da marca.
+ * Botões fáceis de tocar (mínimo 44px; "lg" = 48px), sempre com texto.
+ * - primary: azul cobalto, ação principal da tela.
+ * - secondary: contorno neutro, ações de apoio.
+ * - cta: vermelho, só para ação destrutiva ou de alerta.
  */
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-navy text-white hover:bg-navy-soft",
+  primary: "bg-accent text-white hover:bg-accent-dark",
   cta: "bg-red text-white hover:bg-red-dark",
-  secondary: "border-2 border-navy bg-white text-navy hover:bg-navy-50",
+  secondary: "border border-slate-300 bg-white text-ink hover:border-ink-faint hover:bg-navy-50",
   whatsapp: "bg-whatsapp text-white hover:bg-whatsapp-dark",
-  ghost: "text-navy underline-offset-4 hover:underline",
+  ghost: "text-ink hover:bg-navy-50",
 };
 
 const sizes: Record<ButtonSize, string> = {
-  md: "min-h-12 px-5 text-base",
-  lg: "min-h-16 px-5 py-3 text-lg text-left sm:px-7 sm:text-xl",
+  md: "min-h-11 px-4 text-sm",
+  lg: "min-h-12 px-5 py-2 text-base text-left",
 };
 
 export function buttonClasses(variant: ButtonVariant = "primary", size: ButtonSize = "md", extra?: string) {
   return cn(
-    "inline-flex items-center justify-center gap-3 rounded-2xl font-bold leading-tight transition-colors",
-    "focus-visible:outline-3 focus-visible:outline-offset-3 disabled:cursor-not-allowed disabled:opacity-60",
+    "inline-flex items-center justify-center gap-2 rounded-[10px] font-semibold leading-tight transition-colors",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
     variants[variant],
     sizes[size],
     extra,

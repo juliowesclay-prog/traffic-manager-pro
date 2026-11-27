@@ -34,7 +34,7 @@ export function DailyChart({
         role="img"
         aria-label={`${label}: ${formatBRL(totalSpend)} investidos e ${totalSales} venda(s) em ${data.length} dias. Valores por dia na tabela abaixo.`}
       >
-        <line x1={padX} x2={W - padX} y1={padT + plotH} y2={padT + plotH} stroke="#dfe5ef" strokeWidth={1} />
+        <line x1={padX} x2={W - padX} y1={padT + plotH} y2={padT + plotH} stroke="#e2e6ee" strokeWidth={1} />
         {data.map((d, i) => {
           const h = (d.spend / maxSpend) * plotH;
           const cx = padX + i * step + step / 2;
@@ -47,26 +47,26 @@ export function DailyChart({
                   width={barW}
                   height={h}
                   rx={2}
-                  className="fill-navy"
+                  className="fill-accent"
                 />
               ) : null}
               {d.sales > 0 ? (
                 <>
-                  <circle cx={cx} cy={padT + plotH - h - 10} r={8} className="fill-red" />
+                  <circle cx={cx} cy={padT + plotH - h - 10} r={8} className="fill-amber-400" />
                   <text
                     x={cx}
                     y={padT + plotH - h - 6.5}
                     textAnchor="middle"
                     fontSize="10"
                     fontWeight="700"
-                    fill="#ffffff"
+                    fill="#1B1405"
                   >
                     {d.sales}
                   </text>
                 </>
               ) : null}
               {i % labelEvery === 0 ? (
-                <text x={cx} y={H - 8} textAnchor="middle" fontSize="11" fill="#3f4b63">
+                <text x={cx} y={H - 8} textAnchor="middle" fontSize="11" fill="#465068">
                   {short(d.day)}
                 </text>
               ) : null}
@@ -76,17 +76,19 @@ export function DailyChart({
       </svg>
       <figcaption className="flex flex-wrap gap-4 text-sm text-ink-soft">
         <span className="flex items-center gap-2">
-          <span aria-hidden="true" className="inline-block size-3 rounded-sm bg-navy" /> Investido por dia
+          <span aria-hidden="true" className="inline-block size-3 rounded-sm bg-accent" /> Investido por dia
         </span>
         <span className="flex items-center gap-2">
-          <span aria-hidden="true" className="inline-block size-3 rounded-full bg-red" /> Vendas vindas da
-          Meta
+          <span aria-hidden="true" className="inline-block size-3 rounded-full bg-amber-400" /> Vendas vindas
+          da Meta
         </span>
       </figcaption>
       <details>
-        <summary className="min-h-12 cursor-pointer py-3 font-bold text-navy">Ver em tabela</summary>
+        <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-ink">
+          Ver em tabela
+        </summary>
         <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={`${label} em tabela`}>
-          <table className="w-full text-left text-base">
+          <table className="w-full text-left text-sm">
             <thead>
               <tr className="text-sm text-ink-soft">
                 <th scope="col" className="py-1">

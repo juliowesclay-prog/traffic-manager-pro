@@ -17,7 +17,6 @@ import { KpiCard } from "@/components/admin/kpi-card";
 import { AdminPageTitle } from "@/components/admin/page-title";
 import { requireCompanyStaff } from "@/server/auth";
 import { trafficDashboard } from "@/server/traffic/dashboard";
-import { TrafficTabs } from "../tabs";
 
 export const metadata: Metadata = { title: "Painel do tráfego" };
 
@@ -81,9 +80,8 @@ export default async function TrafficDashboardPage({
     return (
       <>
         <AdminPageTitle title="Painel do tráfego" subtitle="Investimento, vendas e alertas dos anúncios" />
-        <TrafficTabs />
         <Card>
-          <p className="text-lg">
+          <p className="text-base">
             Conecte a Meta e escolha a conta de anúncios para ver o painel.{" "}
             <Link href="/admin/trafego" className="font-bold text-navy underline">
               Ir para Conexão
@@ -101,33 +99,32 @@ export default async function TrafficDashboardPage({
   return (
     <>
       <AdminPageTitle title="Painel do tráfego" subtitle="Investimento, vendas e alertas dos anúncios" />
-      <TrafficTabs />
       {d.account.isDemo ? (
         <p
           role="note"
-          className="mb-6 rounded-2xl border-2 border-amber-500 bg-amber-50 p-4 font-bold text-amber-950"
+          className="mb-6 rounded-xl border border-amber-400/70 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900"
         >
           DEMO — números simulados de teste. Não use para decisões.
         </p>
       ) : null}
 
-      <nav aria-label="Período do painel" className="flex flex-wrap items-center gap-2">
-        {PERIODS.map((n) => (
-          <Link
-            key={n}
-            href={`/admin/trafego/painel?periodo=${n}`}
-            aria-current={n === days ? "true" : undefined}
-            className={cn(
-              "inline-flex min-h-12 items-center rounded-xl border-2 px-4 font-bold",
-              n === days
-                ? "border-navy bg-navy text-white"
-                : "border-line bg-white text-navy hover:border-navy",
-            )}
-          >
-            Últimos {n} dias
-          </Link>
-        ))}
-        <span className="text-sm text-ink-soft">
+      <nav aria-label="Período do painel" className="flex flex-wrap items-center gap-3">
+        <div className="inline-flex flex-wrap rounded-[10px] border border-line bg-white p-1">
+          {PERIODS.map((n) => (
+            <Link
+              key={n}
+              href={`/admin/trafego/painel?periodo=${n}`}
+              aria-current={n === days ? "true" : undefined}
+              className={cn(
+                "inline-flex min-h-9 items-center rounded-[7px] px-3 text-sm font-semibold",
+                n === days ? "bg-navy text-white" : "text-ink-soft hover:bg-navy-50 hover:text-ink",
+              )}
+            >
+              Últimos {n} dias
+            </Link>
+          ))}
+        </div>
+        <span className="text-xs text-ink-soft">
           {br(d.since)} a {br(d.until)}
           {d.lastSync
             ? ` · atualizado ${d.lastSync.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`
@@ -135,7 +132,7 @@ export default async function TrafficDashboardPage({
         </span>
       </nav>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           testId="painel-investido"
           raw={c.spend}
@@ -171,7 +168,7 @@ export default async function TrafficDashboardPage({
       </div>
 
       <Card className="mt-6" data-testid="alertas">
-        <h2 className="text-xl font-bold text-navy">Alertas ({d.alerts.length})</h2>
+        <h2 className="font-display text-base font-semibold text-ink">Alertas ({d.alerts.length})</h2>
         {d.alerts.length ? (
           <ul className="mt-3 grid gap-3">
             {d.alerts.map((a) => {
@@ -180,7 +177,7 @@ export default async function TrafficDashboardPage({
                 <li
                   key={a.id}
                   data-testid={`alerta-${a.id}`}
-                  className={cn("flex items-start gap-3 rounded-2xl border-2 p-3", s.cls)}
+                  className={cn("flex items-start gap-3 rounded-xl border p-3", s.cls)}
                 >
                   {s.icon}
                   <div>
@@ -204,7 +201,7 @@ export default async function TrafficDashboardPage({
       </Card>
 
       <Card className="mt-6">
-        <h2 className="text-xl font-bold text-navy">Investido e vendas por dia</h2>
+        <h2 className="font-display text-base font-semibold text-ink">Investido e vendas por dia</h2>
         <div className="mt-3">
           <DailyChart data={d.series} label="Investido e vendas por dia" />
         </div>
@@ -223,7 +220,7 @@ export default async function TrafficDashboardPage({
           ] as const
         ).map(([title, list, id, empty]) => (
           <Card key={id} data-testid={id}>
-            <h2 className="text-xl font-bold text-navy">{title}</h2>
+            <h2 className="font-display text-base font-semibold text-ink">{title}</h2>
             {list.length ? (
               <ol className="mt-3 grid gap-3">
                 {list.map((a) => (
