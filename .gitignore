@@ -1,14 +1,18 @@
-node_modules
-.next
-.next-prod
-.turbo
-coverage
-test-results
-playwright-report
-.DS_Store
+node_modules/
+.next/
+.next-prod/
+coverage/
+.turbo/
 *.tsbuildinfo
+.DS_Store
+
 # Segredos: nunca versionar
 .env
 .env.*
 !.env.example
+
+test-results/
+playwright-report/
+
+# Acessos de demonstração gerados localmente (nunca versionar)
 *.local.txt

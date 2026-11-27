@@ -1,6 +1,6 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { META_SCOPES } from "@prosed/core";
+import { META_SCOPES } from "@tmp/core";
 import { MetaError, type MetaGateway } from "./meta-gateway";
 import { simulatedConversions, simulatedReader, simulatedWriter } from "./meta-simulated-ads";
 
@@ -59,11 +59,11 @@ export const metaSimulatedGateway: MetaGateway = {
     return [
       {
         accountId: "act_1000000000000001",
-        name: "DEMO Prosed+ Saúde — Anúncios",
+        name: "DEMO Empresa — Anúncios",
         currency: "BRL",
         timezone: "America/Sao_Paulo",
         accountStatus: 1,
-        businessName: "DEMO Prosed Gerenciador de Negócios",
+        businessName: "DEMO Gerenciador de Negócios",
       },
       {
         accountId: "act_1000000000000002",
@@ -71,7 +71,7 @@ export const metaSimulatedGateway: MetaGateway = {
         currency: "BRL",
         timezone: "America/Sao_Paulo",
         accountStatus: 101,
-        businessName: "DEMO Prosed Gerenciador de Negócios",
+        businessName: "DEMO Gerenciador de Negócios",
       },
     ];
   },

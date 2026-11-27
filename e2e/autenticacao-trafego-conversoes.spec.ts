@@ -1,19 +1,11 @@
-import { expect, test, type Browser, type Page } from "@playwright/test";
-import {
-  createPublishedPlan,
-  lastCodeFor,
-  memberLogin,
-  prisma,
-  randomCpf,
-  randomPhone,
-  resetRateLimits,
-  staffLogin,
-} from "./helpers";
+import { randomBytes } from "node:crypto";
+import { expect, test, type APIRequestContext, type Browser } from "@playwright/test";
+import { createTestApiKey, DEMO_COMPANY_A, prisma, resetRateLimits, sendEvents, staffLogin } from "./helpers";
 
 /**
- * Entrega 8.7 — API de Conversões (Meta SIMULADA, dados DEMO): clique no anúncio → cadastro →
- * pagamento → eventos CompleteRegistration e Purchase enviados com o mínimo (fbc + identificador com
- * hash), sem nome/CPF/telefone; sem repetição; falha com nova tentativa; titular anonimizado não vai.
+ * API de Conversões (Meta SIMULADA, dados DEMO): a fonte de vendas informa cadastro (com o link do
+ * anúncio) e venda → eventos CompleteRegistration e Purchase enviados com o mínimo (fbc + identificador
+ * com hash), sem o código do cliente; sem repetição; falha com nova tentativa; sem fbclid não vai.
  */
 test.skip(process.env.META_PROVIDER !== "simulado", "Conversões: precisa de META_PROVIDER=simulado");
 test.describe.configure({ mode: "serial" });
@@ -21,13 +13,11 @@ test.describe.configure({ mode: "serial" });
 const ACCOUNT = "act_1000000000000001";
 const CAMPAIGN = "2380000000000001";
 const FBCLID = "IwAR0teste_E2E_capi_clique456";
-const AD_LINK = `/planos?utm_source=facebook&utm_medium=paid&utm_campaign=${CAMPAIGN}&fbclid=${FBCLID}`;
+const ORIGIN = `https://loja.demo/assinar?utm_source=facebook&utm_medium=paid&utm_campaign=${CAMPAIGN}&fbclid=${FBCLID}`;
 const SIM = "simulado.meta.conversoes";
 const FAIL = "simulado.meta.falhas";
-const CAPI = "traffic.capi";
+const CAPI = `${DEMO_COMPANY_A}:traffic.capi`;
 
-const letters = () =>
-  Array.from({ length: 6 }, () => "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)]).join("");
 type SimEvent = {
   event_name: string;
   event_id: string;
@@ -40,12 +30,13 @@ const received = async () =>
   (((await prisma.setting.findUnique({ where: { key: SIM } }))?.value as { eventos?: SimEvent[] } | null)
     ?.eventos ?? []) as SimEvent[];
 
-let member: { id: string; fullName: string; cpf: string; phone: string };
+let lead: { id: string; externalId: string };
+let key: string;
 
 async function demoAccount(browser: Browser) {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
-  await staffLogin(page, "superadmin@prosed.test");
+  await staffLogin(page, "superadmin@trafficmanager.test");
   await prisma.metaAdAccount.updateMany({ where: { selected: true }, data: { selected: false } });
   await prisma.metaConnection.updateMany({
     where: { status: "ATIVA" },
@@ -59,46 +50,22 @@ async function demoAccount(browser: Browser) {
   return { ctx, page };
 }
 
-async function signupAndPay(page: Page) {
-  await page.goto(AD_LINK);
-  const cpf = randomCpf();
-  const phone = randomPhone();
-  const name = `Clara Conversao ${letters()}`;
-  await page.goto("/associar");
-  await page.locator("form[data-pronto]").waitFor();
-  await page.getByLabel("Nome completo").fill(name);
-  await page.getByLabel("CPF").fill(cpf);
-  await page.getByLabel("Data de nascimento").fill("10031970");
-  await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByLabel("Celular com DDD").fill(phone);
-  await page.getByLabel("Estado").selectOption({ label: "Paraná" });
-  await page.getByLabel("Cidade").selectOption({ label: "Londrina" });
-  const sentAt = new Date();
-  await page.getByRole("button", { name: "Enviar código" }).click();
-  await page.getByLabel("Código recebido no celular").fill(await lastCodeFor(phone, sentAt));
-  await page.getByLabel(/Li a Política de privacidade/).check();
-  await page.getByRole("button", { name: "Concluir cadastro" }).click();
-  await expect(page).toHaveURL(/\/app/);
-  const m = await prisma.member.findFirstOrThrow({
-    where: { fullName: name, cpfLast2: cpf.slice(-2) },
-    orderBy: { createdAt: "desc" },
+/** O sistema de vendas avisa o cadastro (com o link do anúncio) e a 1ª venda. */
+async function signupAndPay(request: APIRequestContext) {
+  const client = `cliente-${randomBytes(4).toString("hex")}`;
+  const r = await sendEvents(request, key, {
+    eventos: [
+      { tipo: "cadastro", id: client, origem: ORIGIN },
+      { tipo: "venda", id: `pedido-${client}`, cliente: client, valor: 39.9 },
+    ],
   });
-  await prisma.member.update({ where: { id: m.id }, data: { isDemo: true } });
-  const plan = await createPublishedPlan(3990);
-  await page.goto(`/app/assinatura/contratar?plano=${plan.id}`);
-  await page.getByLabel(/Li e aceito o Termo de Adesão/).check();
-  await page.getByRole("button", { name: "ACEITAR E CONTINUAR" }).click();
-  await page.getByRole("button", { name: "IR PARA O PAGAMENTO" }).click();
-  await page.getByRole("button", { name: "Aprovar pagamento" }).click();
-  await expect
-    .poll(async () => (await prisma.subscription.findFirst({ where: { memberId: m.id } }))?.status, {
-      timeout: 15_000,
-    })
-    .toBe("ATIVA");
-  return { id: m.id, fullName: name, cpf, phone };
+  expect(r.json.itens?.map((i) => i.status)).toEqual(["gravado", "gravado"]);
+  const l = await prisma.lead.findFirstOrThrow({ where: { externalId: client } });
+  return { id: l.id, externalId: client };
 }
 
 test.beforeAll(async () => {
+  key = await createTestApiKey();
   await prisma.setting.deleteMany({ where: { key: { in: [SIM, FAIL, CAPI] } } });
   await prisma.metaConversionEvent.deleteMany({});
 });
@@ -111,10 +78,10 @@ test.afterAll(async () => {
 });
 
 test.describe("Gestor de Tráfego IA: API de Conversões", () => {
-  test("desligada: nada entra na fila nem é enviado", async ({ page, browser }) => {
+  test("desligada: nada entra na fila nem é enviado", async ({ request, browser }) => {
     test.setTimeout(180_000);
     const staff = await demoAccount(browser);
-    member = await signupAndPay(page);
+    lead = await signupAndPay(request);
     await staff.page.goto("/admin/trafego/conversoes");
     await expect(staff.page.getByTestId("capi-situacao")).toHaveText("Desligado");
     await staff.page.getByRole("button", { name: "Enviar agora" }).click();
@@ -144,7 +111,7 @@ test.describe("Gestor de Tráfego IA: API de Conversões", () => {
     await page.getByRole("button", { name: "Enviar agora" }).click();
     await expect(page.getByRole("status").first()).toContainText(/ [1-9]\d* enviado\(s\)/);
 
-    const rows = await prisma.metaConversionEvent.findMany({ where: { memberId: member.id } });
+    const rows = await prisma.metaConversionEvent.findMany({ where: { leadId: lead.id } });
     expect(rows.map((r) => r.kind).sort()).toEqual(["CADASTRO", "VENDA"]);
     expect(rows.every((r) => r.status === "ENVIADO" && r.testMode && r.isDemo)).toBe(true);
     expect(rows.find((r) => r.kind === "VENDA")?.valueCents).toBe(3990);
@@ -162,35 +129,23 @@ test.describe("Gestor de Tráfego IA: API de Conversões", () => {
       currency: "BRL",
       value: 39.9,
     });
-    // Nada de nome, CPF, telefone ou o ID interno do associado.
+    // Nem o código do cliente no sistema de vendas nem o ID interno vão para a Meta.
     const raw = JSON.stringify(mine);
-    for (const s of [member.fullName, member.cpf, member.phone, member.id]) expect(raw).not.toContain(s);
+    for (const s of [lead.externalId, lead.id]) expect(raw).not.toContain(s);
 
     // Enviar de novo não repete.
     const before = (await received()).length;
     await page.getByRole("button", { name: "Enviar agora" }).click();
     await expect(page.getByRole("status").first()).toContainText("0 enviado(s)");
-    expect(await prisma.metaConversionEvent.count({ where: { memberId: member.id } })).toBe(2);
+    expect(await prisma.metaConversionEvent.count({ where: { leadId: lead.id } })).toBe(2);
     expect((await received()).length).toBe(before);
-    await expect(page.getByTestId("capi-eventos")).toContainText("Venda (1ª mensalidade paga) · R$ 39,90");
+    await expect(page.getByTestId("capi-eventos")).toContainText("Venda (1ª compra paga) · R$ 39,90");
     await ctx.close();
-  });
-
-  test("o associado vê nos próprios dados o que foi avisado à Meta (LGPD)", async ({ page }) => {
-    await memberLogin(page, member.phone);
-    const data = (await (await page.request.get("/api/v1/me/dados")).json()) as {
-      avisos_enviados_a_meta: { evento: string; valor: number | null; modo_de_teste: boolean }[];
-    };
-    expect(data.avisos_enviados_a_meta.map((a) => a.evento).sort()).toEqual(["cadastro", "venda"]);
-    expect(data.avisos_enviados_a_meta.find((a) => a.evento === "venda")).toMatchObject({
-      valor: 39.9,
-      modo_de_teste: true,
-    });
   });
 
   test("falha da Meta: fica com erro e é enviado na nova tentativa", async ({ browser }) => {
     const ev = await prisma.metaConversionEvent.findFirstOrThrow({
-      where: { memberId: member.id, kind: "VENDA" },
+      where: { leadId: lead.id, kind: "VENDA" },
     });
     await prisma.metaConversionEvent.update({
       where: { id: ev.id },
@@ -220,15 +175,15 @@ test.describe("Gestor de Tráfego IA: API de Conversões", () => {
     await ctx.close();
   });
 
-  test("sem o código do clique (titular anonimizado) o evento não é enviado", async ({ browser }) => {
+  test("sem o código do clique (apagado) o evento não é enviado", async ({ browser }) => {
     const ev = await prisma.metaConversionEvent.findFirstOrThrow({
-      where: { memberId: member.id, kind: "CADASTRO" },
+      where: { leadId: lead.id, kind: "CADASTRO" },
     });
     await prisma.metaConversionEvent.update({
       where: { id: ev.id },
       data: { status: "PENDENTE", nextAttemptAt: new Date(Date.now() - 1000) },
     });
-    await prisma.memberAttribution.update({ where: { memberId: member.id }, data: { fbclid: null } });
+    await prisma.lead.update({ where: { id: lead.id }, data: { fbclid: null } });
     const before = (await received()).length;
     const { ctx, page } = await demoAccount(browser);
     await page.goto("/admin/trafego/conversoes");
@@ -241,16 +196,16 @@ test.describe("Gestor de Tráfego IA: API de Conversões", () => {
     await ctx.close();
   });
 
-  test("permissões: marketing não altera a configuração; financeiro não abre", async ({ page, browser }) => {
-    await staffLogin(page, "marketing@prosed.test");
+  test("permissões: marketing não altera a configuração; sem empresa não abre", async ({ page, browser }) => {
+    await staffLogin(page, "marketing@trafficmanager.test");
     await page.goto("/admin/trafego/conversoes");
     await expect(page.getByText("Só quem pode aprovar ações altera esta configuração")).toBeVisible();
     await expect(page.getByRole("button", { name: "Enviar agora" })).toBeVisible();
     const ctx = await browser.newContext();
     const f = await ctx.newPage();
-    await staffLogin(f, "financeiro@prosed.test");
+    await staffLogin(f, "semempresa@trafficmanager.test");
     await f.goto("/admin/trafego/conversoes");
-    await expect(f).toHaveURL(/\/admin\/sem-permissao$/);
+    await expect(f).toHaveURL(/\/admin\/sem-empresa$/);
     await ctx.close();
   });
 });

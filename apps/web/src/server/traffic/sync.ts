@@ -5,8 +5,9 @@ import {
   shouldAutoSync,
   syncWindow,
   type MetaSyncInterval,
-} from "@prosed/core";
-import { decrypt, prisma, type Prisma } from "@prosed/db";
+} from "@tmp/core";
+import { decrypt, type Prisma } from "@tmp/db";
+import { prisma } from "@/server/db";
 import { audit } from "../audit";
 import { rateLimit } from "../rate-limit";
 import { activeConnection, type TrafficResult } from "./connection";

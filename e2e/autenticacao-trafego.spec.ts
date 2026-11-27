@@ -34,7 +34,7 @@ async function openAuthorize(page: Page, label = "Conectar com a Meta") {
 
 test.describe("Gestor de Tráfego IA: conexão com a Meta", () => {
   test("conecta, escolhe a conta, guarda a chave cifrada e registra na auditoria", async ({ page }) => {
-    await staffLogin(page, "superadmin@prosed.test");
+    await staffLogin(page, "superadmin@trafficmanager.test");
     await page.goto("/admin/trafego");
     await expect(page.getByRole("heading", { name: "Gestor de Tráfego IA", level: 1 })).toBeVisible();
     await expect(page.getByRole("note")).toContainText("DEMO");
@@ -105,7 +105,7 @@ test.describe("Gestor de Tráfego IA: conexão com a Meta", () => {
   });
 
   test("cancelar, permissões incompletas e retorno falsificado não conectam nada", async ({ page }) => {
-    await staffLogin(page, "superadmin@prosed.test");
+    await staffLogin(page, "superadmin@trafficmanager.test");
     const before = await prisma.metaConnection.count();
 
     await openAuthorize(page);
@@ -142,23 +142,25 @@ test.describe("Gestor de Tráfego IA: conexão com a Meta", () => {
     expect(evil.status()).toBe(404);
   });
 
-  test("perfil Marketing usa o módulo; financeiro e atendimento não", async ({ page, browser }) => {
-    await staffLogin(page, "marketing@prosed.test");
+  test("perfil Marketing usa o módulo; quem não tem empresa não", async ({ page, browser }) => {
+    await staffLogin(page, "marketing@trafficmanager.test");
     await page.goto("/admin/trafego");
     await expect(page.getByRole("button", { name: "Conectar com a Meta" })).toBeVisible();
-    // Marketing não vê associados nem financeiro.
-    await page.goto("/admin/associados");
+    // Marketing não administra a equipe nem as empresas.
+    await page.goto("/admin/usuarios");
+    await expect(page).toHaveURL(/\/admin\/sem-permissao$/);
+    await page.goto("/admin/empresas");
     await expect(page).toHaveURL(/\/admin\/sem-permissao$/);
 
-    for (const email of ["financeiro@prosed.test", "atendimento@prosed.test"]) {
+    for (const email of ["semempresa@trafficmanager.test"]) {
       const ctx = await browser.newContext();
       const p = await ctx.newPage();
       await staffLogin(p, email);
       await p.goto("/admin/trafego");
-      await expect(p).toHaveURL(/\/admin\/sem-permissao$/);
-      // O retorno da Meta também exige a permissão.
+      await expect(p).toHaveURL(/\/admin\/sem-empresa$/);
+      // O retorno da Meta também exige empresa e permissão.
       await p.goto("/api/v1/admin/trafego/meta/retorno?code=x&state=y");
-      await expect(p).toHaveURL(/\/admin\/sem-permissao$/);
+      await expect(p).toHaveURL(/\/admin\/sem-empresa$/);
       await ctx.close();
     }
   });

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Info, Receipt, ShoppingCart, Users, Wallet } from "lucide-react";
-import { costPer, formatBRL, REPORT_PERIODS } from "@prosed/core";
-import { Card, cn } from "@prosed/ui";
+import { costPer, formatBRL, REPORT_PERIODS } from "@tmp/core";
+import { Card, cn } from "@tmp/ui";
 import { KpiCard } from "@/components/admin/kpi-card";
 import { AdminPageTitle } from "@/components/admin/page-title";
 import { META_URL_PARAMS } from "@/lib/attribution";
-import { requireStaff } from "@/server/auth";
+import { requireCompanyStaff } from "@/server/auth";
 import { cac, roas, salesByAd, type SalesRow } from "@/server/traffic/sales";
 import { TrafficTabs } from "../tabs";
 
@@ -48,7 +48,7 @@ export default async function SalesByAdPage({
 }: {
   searchParams: Promise<{ periodo?: string }>;
 }) {
-  await requireStaff("traffic:read");
+  await requireCompanyStaff("traffic:read");
   const q = await searchParams;
   const days = (REPORT_PERIODS as readonly number[]).includes(Number(q.periodo)) ? Number(q.periodo) : 30;
   const r = await salesByAd(days);
@@ -57,7 +57,7 @@ export default async function SalesByAdPage({
     <>
       <AdminPageTitle
         title="Vendas por anúncio"
-        subtitle="Quanto cada campanha custou e quantas assinaturas pagas trouxe de verdade"
+        subtitle="Quanto cada campanha custou e quantas vendas pagas trouxe de verdade"
       />
       <TrafficTabs />
 
@@ -107,8 +107,8 @@ export default async function SalesByAdPage({
             </button>
           </form>
           <p className="mt-2 text-sm text-ink-soft">
-            {br(r.since)} a {br(r.until)}. Vendas = primeira mensalidade paga no período. Receita =
-            mensalidades pagas no período por quem veio de anúncio, menos devoluções.
+            {br(r.since)} a {br(r.until)}. Vendas = primeira compra paga no período (fonte de vendas). Receita =
+            compras pagas no período, menos estornos.
           </p>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
@@ -131,7 +131,7 @@ export default async function SalesByAdPage({
               testId="vendas-vendas"
               raw={r.totals.sales}
               icon={<ShoppingCart className="size-6" />}
-              label="Vendas (assinaturas pagas)"
+              label="Vendas (1ª compra paga)"
               value={r.totals.sales.toLocaleString("pt-BR")}
               note={`CAC ${money(cac(r.totals))}`}
             />

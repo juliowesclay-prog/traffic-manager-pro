@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { randomBytes } from "node:crypto";
 import { notFound } from "next/navigation";
-import { buttonClasses } from "@prosed/ui";
+import { buttonClasses } from "@tmp/ui";
 import { metaProviderName, metaRedirectUri } from "@/server/traffic";
 
 export const metadata: Metadata = { title: "Autorização simulada da Meta", robots: { index: false } };
@@ -26,9 +26,9 @@ export default async function SimulatedMetaAuthorizePage({
       <p className="rounded-2xl border-2 border-amber-500 bg-amber-50 p-4 font-bold text-amber-950">
         AMBIENTE DE TESTES — autorização simulada da Meta. Nenhuma conta real é conectada.
       </p>
-      <h1 className="font-display text-3xl font-extrabold text-navy">Conectar ao Prosed+ Saúde</h1>
+      <h1 className="font-display text-3xl font-extrabold text-navy">Conectar ao Traffic Manager Pro</h1>
       <p className="text-lg">
-        O app <strong>Prosed+ Saúde</strong> quer ler e gerenciar suas contas de anúncio (Facebook e
+        O app <strong>Traffic Manager Pro</strong> quer ler e gerenciar suas contas de anúncio (Facebook e
         Instagram).
       </p>
       <form method="get" action={metaRedirectUri()} className="grid gap-3">

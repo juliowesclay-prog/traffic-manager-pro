@@ -12,10 +12,10 @@ import {
   TRAFFIC_ACTION_STATUS_LABELS,
   TRAFFIC_LEVEL_LABELS,
   TRAFFIC_ACTION_KINDS,
-} from "@prosed/core";
-import { Card, cn } from "@prosed/ui";
+} from "@tmp/core";
+import { Card, cn } from "@tmp/ui";
 import { AdminPageTitle } from "@/components/admin/page-title";
-import { requireStaff } from "@/server/auth";
+import { requireCompanyStaff } from "@/server/auth";
 import {
   actionOutcome,
   actionSettings,
@@ -41,7 +41,7 @@ export default async function TrafficActionsPage({
 }: {
   searchParams: Promise<{ alvo?: string; tipo?: string; valor?: string; analise?: string; acao?: string }>;
 }) {
-  const { user, roles } = await requireStaff("traffic:read");
+  const { user, roles } = await requireCompanyStaff("traffic:read");
   const canManage = can(roles, "traffic:manage");
   const canApprove = can(roles, "traffic:approve");
   const q = await searchParams;

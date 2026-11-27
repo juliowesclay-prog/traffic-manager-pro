@@ -10,9 +10,11 @@ import {
   type AiAnalysisInput,
   type AiTotals,
   type ReviewedAnalysis,
-} from "@prosed/core";
-import { prisma, type Prisma } from "@prosed/db";
+} from "@tmp/core";
+import { type Prisma } from "@tmp/db";
+import { prisma } from "@/server/db";
 import { audit } from "@/server/audit";
+import { currentCompanyId } from "@/server/tenant";
 import { rateLimit } from "@/server/rate-limit";
 import { trafficDashboard } from "../dashboard";
 import { activeAnalyst, aiProviderName, AnalystError } from "./index";
@@ -44,19 +46,20 @@ const totals = (t: Totals): AiTotals => ({
   ctr_pct: ratio(t.linkClicks, t.impressions),
 });
 
-/** O que vai para a IA. Sem nomes, telefones ou qualquer dado de associado. */
+/** O que vai para a IA. Sem nomes, telefones ou qualquer dado pessoal de cliente. */
 export async function buildAnalysisInput(days: number, now = new Date()) {
   const d = await trafficDashboard(days, now);
   if (!d.account) return null;
   const accountId = (await prisma.metaAdAccount.findFirst({ where: { selected: true } }))?.accountId;
+  // Contexto para a IA: só o nome da empresa (nenhum dado de cliente).
+  const company = await prisma.company.findUnique({ where: { id: await currentCompanyId() }, select: { name: true } });
   const campaigns = await prisma.metaCampaign.findMany({ where: { accountId } });
   const rowOf = new Map(d.salesRows.map((r) => [r.key, r]));
 
   const input: AiAnalysisInput = {
     periodo: { dias: days, de: d.since, ate: d.until },
     moeda: "BRL",
-    produto:
-      "Cartão do Trabalhador — clube de benefícios em saúde por assinatura mensal (não é plano de saúde)",
+    produto: company?.name ?? "empresa",
     totais: totals(d.current),
     periodo_anterior: totals(d.previous),
     campanhas: campaigns

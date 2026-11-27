@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
-import { prisma, resetRateLimits, staffLogin } from "./helpers";
+import { prisma, resetRateLimits, staffLogin, DEMO_COMPANY_A } from "./helpers";
 
 /** Entrega 8.2 — sincronização dos anúncios (Meta SIMULADA, dados DEMO). Testes em série. */
 test.skip(process.env.META_PROVIDER !== "simulado", "Gestor de Tráfego: precisa de META_PROVIDER=simulado");
@@ -9,7 +9,7 @@ const ACCOUNT = "act_1000000000000001";
 const VENDAS = "2380000000000001";
 
 async function clearSync() {
-  await prisma.setting.deleteMany({ where: { key: { in: ["simulado.meta.falhas", "traffic.sync"] } } });
+  await prisma.setting.deleteMany({ where: { key: { in: ["simulado.meta.falhas", `${DEMO_COMPANY_A}:traffic.sync`] } } });
   await prisma.metaSyncRun.deleteMany({});
   await prisma.metaInsightDaily.deleteMany({});
   await prisma.metaAd.deleteMany({});
@@ -45,7 +45,9 @@ const tasks = async (request: APIRequestContext) => {
     headers: { "x-tarefa-secret": process.env.CRON_SECRET! },
   });
   expect(res.status()).toBe(200);
-  return res.json() as Promise<{ anuncios: string }>;
+  // A rotina roda para cada empresa; aqui olhamos a Empresa A (DEMO).
+  const body = (await res.json()) as { empresas: Record<string, { anuncios: string }> };
+  return body.empresas["demo-empresa-a"];
 };
 
 async function axe(page: Page) {
@@ -57,7 +59,7 @@ test.describe("Gestor de Tráfego IA: sincronização", () => {
   test("atualizar agora traz campanhas, conjuntos, anúncios e resultados; repetir não duplica", async ({
     page,
   }) => {
-    await staffLogin(page, "marketing@prosed.test");
+    await staffLogin(page, "marketing@trafficmanager.test");
     await connect(page);
     await page.getByRole("link", { name: "Campanhas", exact: true }).click();
     await expect(page.getByTestId("ultima-atualizacao")).toContainText("90 dias");
@@ -129,7 +131,7 @@ test.describe("Gestor de Tráfego IA: sincronização", () => {
   });
 
   test("automática no intervalo; falha da Meta não apaga nada e avisa", async ({ page, request }) => {
-    await staffLogin(page, "superadmin@prosed.test");
+    await staffLogin(page, "superadmin@trafficmanager.test");
     await connect(page);
 
     // Intervalo configurável e auditado.
@@ -174,7 +176,7 @@ test.describe("Gestor de Tráfego IA: sincronização", () => {
   });
 
   test("sem conta escolhida a tela orienta; quem não é do tráfego não acessa", async ({ page, browser }) => {
-    await staffLogin(page, "superadmin@prosed.test");
+    await staffLogin(page, "superadmin@trafficmanager.test");
     await prisma.metaAdAccount.updateMany({ where: { selected: true }, data: { selected: false } });
     await prisma.metaConnection.updateMany({
       where: { status: "ATIVA" },
@@ -186,9 +188,9 @@ test.describe("Gestor de Tráfego IA: sincronização", () => {
 
     const ctx = await browser.newContext();
     const p = await ctx.newPage();
-    await staffLogin(p, "financeiro@prosed.test");
+    await staffLogin(p, "semempresa@trafficmanager.test");
     await p.goto("/admin/trafego/campanhas");
-    await expect(p).toHaveURL(/\/admin\/sem-permissao$/);
+    await expect(p).toHaveURL(/\/admin\/sem-empresa$/);
     await ctx.close();
   });
 });

@@ -1,6 +1,6 @@
 import "server-only";
-import { addDays, formatBRL, metaTokenHealth, trafficAlerts, type AlertCampaign } from "@prosed/core";
-import { prisma, type Prisma } from "@prosed/db";
+import { addDays, formatBRL, metaTokenHealth, trafficAlerts, type AlertCampaign } from "@tmp/core";
+import { prisma } from "@/server/db";
 import { isMetaSource } from "@/lib/attribution";
 import { activeConnection } from "./connection";
 import { salesByAd } from "./sales";
@@ -8,7 +8,7 @@ import { syncSettings } from "./sync";
 
 /**
  * Painel do Gestor de Tráfego (entrega 8.4): período atual × anterior, série diária, ranking dos
- * anúncios e alertas. Somente leitura; junta números da Meta com as vendas reais do Prosed.
+ * anúncios e alertas. Somente leitura; junta números da Meta com as vendas reais da fonte de vendas.
  */
 
 const spStart = (iso: string) => new Date(`${iso}T00:00:00-03:00`);
@@ -32,7 +32,7 @@ export async function trafficDashboard(days: number, now = new Date()) {
     gte: new Date(`${s}T00:00:00Z`),
     lte: new Date(`${u}T00:00:00Z`),
   });
-  const memberWhere: Prisma.MemberWhereInput = account.isDemo ? {} : { isDemo: false };
+  const leadWhere = account.isDemo ? {} : { isDemo: false };
 
   const [
     daily,
@@ -70,24 +70,22 @@ export async function trafficDashboard(days: number, now = new Date()) {
     prisma.metaCreative.findMany({ where: { accountId } }),
     prisma.metaSyncRun.findFirst({ where: { accountId, status: "OK" }, orderBy: { finishedAt: "desc" } }),
     syncSettings(),
-    // Vendas por dia (1ª mensalidade paga) de quem veio da Meta.
-    prisma.subscriptionEvent.findMany({
-      where: {
-        fromStatus: "AGUARDANDO_PAGAMENTO",
-        toStatus: "ATIVA",
-        at: { gte: spStart(since), lt: spStart(addDays(until, 1)) },
-        subscription: { member: { ...memberWhere, attribution: { isNot: null } } },
+    // Vendas por dia (1ª compra paga) de quem veio da Meta (fonte de vendas).
+    prisma.sale.findMany({
+      where: { ...leadWhere, first: true, paidAt: { gte: spStart(since), lt: spStart(addDays(until, 1)) } },
+      select: {
+        paidAt: true,
+        lead: { select: { source: true, campaignExternalId: true, adExternalId: true, fbclid: true } },
       },
-      select: { at: true, subscription: { select: { member: { select: { attribution: true } } } } },
     }),
   ]);
 
   // Série diária: investido × vendas vindas da Meta.
   const salesPerDay = new Map<string, number>();
   for (const j of joinsByDay) {
-    const a = j.subscription.member.attribution;
-    if (!a || !(a.campaignExternalId || isMetaSource(a.source))) continue;
-    const d = j.at.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+    const a = j.lead;
+    if (!(a.campaignExternalId || isMetaSource(a.source))) continue;
+    const d = j.paidAt.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
     salesPerDay.set(d, (salesPerDay.get(d) ?? 0) + 1);
   }
   const spendPerDay = new Map(daily.map((d) => [d.date.toISOString().slice(0, 10), d._sum.spend ?? 0]));

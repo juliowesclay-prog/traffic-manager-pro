@@ -9,7 +9,7 @@ import {
   pickAction,
   targetingSummary,
   type MetaAction,
-} from "@prosed/core";
+} from "@tmp/core";
 import {
   MetaError,
   type MetaAccountInfo,

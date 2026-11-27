@@ -7,14 +7,15 @@ import {
   metaCallbackErrorMessage,
   metaTokenHealth,
   missingMetaScopes,
-} from "@prosed/core";
-import { decrypt, encrypt, prisma } from "@prosed/db";
+} from "@tmp/core";
+import { decrypt, encrypt } from "@tmp/db";
+import { prisma } from "@/server/db";
 import { audit } from "../audit";
 import { rateLimit } from "../rate-limit";
 import { activeMeta, metaByName, metaProviderName, metaRedirectUri, MetaError } from "./index";
 
 /**
- * Conexão do Prosed+ Saúde com a Meta (entrega 8.1).
+ * Conexão da empresa com a Meta (veio do Prosed+ Saúde, entrega 8.1).
  * - A chave de acesso fica cifrada no banco e nunca vai para a tela, para logs ou para a auditoria.
  * - O fluxo de autorização usa "state" aleatório de uso único, preso ao usuário logado e a um cookie
  *   httpOnly, válido por 10 minutos (impede que alguém ligue a conta de anúncios DELE ao nosso sistema).
@@ -26,9 +27,9 @@ export type TrafficResult = { ok: boolean; message: string };
 export type ConnectCode =
   "conectado" | "cancelado" | "invalido" | "expirou" | "permissoes" | "recusado" | "indisponivel";
 export type ConnectResult = { ok: boolean; code: ConnectCode; message: string };
-export const META_STATE_COOKIE = "prosed_meta_state";
+export const META_STATE_COOKIE = "tmp_meta_state";
 const REVOKE_PENDING =
-  "A Meta não confirmou a retirada das permissões. Confira na Meta em Configurações → Integrações comerciais e remova o app Prosed+ Saúde.";
+  "A Meta não confirmou a retirada das permissões. Confira na Meta em Configurações → Integrações comerciais e remova o app Traffic Manager Pro.";
 
 const sha = (v: string) => createHash("sha256").update(v).digest("hex");
 const same = (a: string, b: string) => {
@@ -177,7 +178,7 @@ export async function activeConnection() {
   });
 }
 
-/** Escolhe a conta usada pelo Prosed+ Saúde (só contas ativas da conexão atual). */
+/** Escolhe a conta usada pela empresa (só contas ativas da conexão atual). */
 export async function selectAdAccount(userId: string, accountRowId: string): Promise<TrafficResult> {
   const conn = await activeConnection();
   const acc = conn?.accounts.find((a) => a.id === accountRowId);

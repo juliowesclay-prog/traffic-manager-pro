@@ -15,8 +15,9 @@ import {
   type TrafficActionKind,
   type TrafficActionSettings,
   type TrafficLevel,
-} from "@prosed/core";
-import { decrypt, Prisma, prisma } from "@prosed/db";
+} from "@tmp/core";
+import { decrypt, Prisma } from "@tmp/db";
+import { prisma } from "@/server/db";
 import { audit } from "../audit";
 import { rateLimit } from "../rate-limit";
 import { activeConnection, type TrafficResult } from "./connection";

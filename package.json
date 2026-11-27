@@ -2,9 +2,50 @@
   "name": "traffic-manager-pro",
   "private": true,
   "packageManager": "pnpm@9.15.4",
-  "engines": { "node": ">=22.12 <23" },
+  "engines": {
+    "node": ">=22.12 <23"
+  },
   "scripts": {
-    "test": "pnpm --filter @tmp/core test",
-    "typecheck": "pnpm --filter @tmp/core typecheck"
+    "env:init": "node scripts/setup-env.mjs",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "playwright test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "infra:up": "docker compose -f infra/docker-compose.yml --env-file .env up -d --wait",
+    "infra:down": "docker compose -f infra/docker-compose.yml --env-file .env down",
+    "db:migrate": "pnpm --filter @tmp/db db:migrate",
+    "db:deploy": "pnpm --filter @tmp/db db:deploy",
+    "db:seed": "pnpm --filter @tmp/db db:seed",
+    "db:studio": "pnpm --filter @tmp/db db:studio",
+    "db:seed:demo": "pnpm --filter @tmp/db db:seed:demo",
+    "worker": "node scripts/worker.mjs",
+    "demo:acesso": "node scripts/acesso-demo.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@eslint/js": "^9.17.0",
+    "@node-rs/argon2": "^2.2.2",
+    "@playwright/test": "1.56.1",
+    "@tmp/core": "workspace:^",
+    "@tmp/db": "workspace:^",
+    "@types/pngjs": "6.0.5",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^10.0.1",
+    "globals": "^15.14.0",
+    "jsqr": "1.4.0",
+    "pngjs": "7.0.0",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "~5.7.3",
+    "typescript-eslint": "^8.19.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss@<8.5.18": "^8.5.18"
+    }
   }
 }

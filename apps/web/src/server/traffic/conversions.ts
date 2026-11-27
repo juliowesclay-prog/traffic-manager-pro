@@ -12,8 +12,9 @@ import {
   normalizeCapiSettings,
   withinCapiWindow,
   type CapiSettings,
-} from "@prosed/core";
-import { decrypt, prisma, type Prisma } from "@prosed/db";
+} from "@tmp/core";
+import { decrypt, type Prisma } from "@tmp/db";
+import { prisma } from "@/server/db";
 import { audit } from "../audit";
 import { rateLimit } from "../rate-limit";
 import { activeConnection, type TrafficResult } from "./connection";
@@ -22,7 +23,7 @@ import { metaByName, MetaError } from "./index";
 /**
  * API de Conversões da Meta (entrega 8.7).
  * - Desligada até alguém com `traffic:approve` informar o conjunto de dados (pixel) e ligar.
- * - Entram na fila só cadastros e vendas (1ª mensalidade paga) de quem chegou por um CLIQUE em
+ * - Entram na fila só cadastros e vendas (1ª compra paga, informados pela fonte de vendas) de quem chegou por um CLIQUE em
  *   anúncio da Meta (tem fbclid) nos últimos 7 dias — o prazo que a Meta aceita.
  * - Vai para a Meta o mínimo: evento, hora, código único, página de entrada, código do clique (fbc)
  *   e um identificador da pessoa com hash. Nada de nome, CPF, telefone ou e-mail.
@@ -32,13 +33,12 @@ import { metaByName, MetaError } from "./index";
  */
 
 export const CAPI_SETTING_KEY = "traffic.capi";
-const CASH_IN = ["CONFIRMADA", "RECEBIDA", "DUPLICADA", "ESTORNADA"] as const;
 /** Trava curta para duas rotinas ao mesmo tempo não enviarem o mesmo evento. */
 const LEASE_MS = 5 * 60_000;
 
 /** Identificador da pessoa para a Meta: hash SHA-256 do ID interno (nunca dado pessoal). */
-export const externalIdHash = (memberId: string) =>
-  createHash("sha256").update(`prosed-membro:${memberId}`).digest("hex");
+export const externalIdHash = (leadId: string) =>
+  createHash("sha256").update(`tmp-lead:${leadId}`).digest("hex");
 
 export async function capiSettings(): Promise<CapiSettings> {
   const s = await prisma.setting.findUnique({ where: { key: CAPI_SETTING_KEY } });
@@ -96,65 +96,40 @@ export async function collectConversions(now = new Date()): Promise<number> {
   const { account } = await selected();
   if (!settings.enabled || !account) return 0;
   const since = new Date(now.getTime() - CAPI_LIMITS.maxAgeMs);
-  const memberWhere: Prisma.MemberWhereInput = {
-    ...(account.isDemo ? {} : { isDemo: false }),
-    attribution: { is: { fbclid: { not: null } } },
-  };
+  const leadWhere = { ...(account.isDemo ? {} : { isDemo: false }), fbclid: { not: null } };
   const [signups, joins] = await Promise.all([
-    prisma.member.findMany({
-      where: { ...memberWhere, createdAt: { gte: since } },
-      select: { id: true, createdAt: true, attribution: { select: { campaignExternalId: true } } },
+    prisma.lead.findMany({
+      where: { ...leadWhere, createdAt: { gte: since } },
+      select: { id: true, createdAt: true, campaignExternalId: true },
       take: 2000,
     }),
-    prisma.subscriptionEvent.findMany({
-      where: {
-        fromStatus: "AGUARDANDO_PAGAMENTO",
-        toStatus: "ATIVA",
-        at: { gte: since },
-        subscription: { member: memberWhere },
-      },
-      select: {
-        id: true,
-        at: true,
-        subscription: {
-          select: {
-            memberId: true,
-            member: { select: { attribution: { select: { campaignExternalId: true } } } },
-            charges: {
-              where: { status: { in: [...CASH_IN] }, paidAt: { not: null } },
-              orderBy: { paidAt: "asc" },
-              take: 1,
-              select: { amount: true },
-            },
-          },
-        },
-      },
+    prisma.sale.findMany({
+      where: { first: true, paidAt: { gte: since }, lead: leadWhere },
+      select: { id: true, paidAt: true, amount: true, leadId: true, lead: { select: { campaignExternalId: true } } },
       take: 2000,
     }),
   ]);
   const rows: Prisma.MetaConversionEventCreateManyInput[] = [
-    ...signups.map((m) => ({
-      eventId: capiEventId("CADASTRO", m.id),
+    ...signups.map((l) => ({
+      eventId: capiEventId("CADASTRO", l.id),
       kind: "CADASTRO" as const,
-      memberId: m.id,
-      eventTime: m.createdAt,
+      leadId: l.id,
+      eventTime: l.createdAt,
       valueCents: null,
-      campaignExternalId: m.attribution?.campaignExternalId ?? null,
+      campaignExternalId: l.campaignExternalId,
       isDemo: account.isDemo,
       nextAttemptAt: now,
     })),
-    ...joins
-      .filter((j) => j.subscription.charges.length)
-      .map((j) => ({
-        eventId: capiEventId("VENDA", j.id),
-        kind: "VENDA" as const,
-        memberId: j.subscription.memberId,
-        eventTime: j.at,
-        valueCents: j.subscription.charges[0]!.amount,
-        campaignExternalId: j.subscription.member.attribution?.campaignExternalId ?? null,
-        isDemo: account.isDemo,
-        nextAttemptAt: now,
-      })),
+    ...joins.map((j) => ({
+      eventId: capiEventId("VENDA", j.id),
+      kind: "VENDA" as const,
+      leadId: j.leadId,
+      eventTime: j.paidAt,
+      valueCents: j.amount,
+      campaignExternalId: j.lead.campaignExternalId,
+      isDemo: account.isDemo,
+      nextAttemptAt: now,
+    })),
   ];
   if (!rows.length) return 0;
   const r = await prisma.metaConversionEvent.createMany({ data: rows, skipDuplicates: true });
@@ -186,17 +161,16 @@ export async function sendConversions(now = new Date()): Promise<SendOutcome> {
     data: { nextAttemptAt: new Date(now.getTime() + LEASE_MS) },
   });
 
-  const attrs = await prisma.memberAttribution.findMany({
-    where: { memberId: { in: [...new Set(due.map((e) => e.memberId))] } },
-    select: { memberId: true, fbclid: true, clickedAt: true, landingPath: true },
+  const leads = await prisma.lead.findMany({
+    where: { id: { in: [...new Set(due.map((e) => e.leadId))] } },
+    select: { id: true, fbclid: true, clickedAt: true, createdAt: true, landingUrl: true },
   });
-  const byMember = new Map(attrs.map((a) => [a.memberId, a]));
-  const site = (process.env.APP_URL ?? "http://localhost:3200").replace(/\/$/, "");
+  const byLead = new Map(leads.map((l) => [l.id, l]));
 
   const batch: { id: string; event: ReturnType<typeof buildCapiEvent> }[] = [];
   for (const e of due) {
-    const a = byMember.get(e.memberId);
-    const fbc = a ? buildFbc(a.fbclid, a.clickedAt) : null;
+    const a = byLead.get(e.leadId);
+    const fbc = a ? buildFbc(a.fbclid, a.clickedAt ?? a.createdAt) : null;
     const reason = !fbc
       ? "Sem o código do clique (apagado após 90 dias ou a pedido do titular)."
       : !withinCapiWindow(e.eventTime, now)
@@ -217,9 +191,9 @@ export async function sendConversions(now = new Date()): Promise<SendOutcome> {
         // Para a Meta vai o ID aleatório da linha da fila (o eventId interno contém IDs do sistema).
         eventId: e.id,
         eventTime: e.eventTime,
-        sourceUrl: `${site}${a!.landingPath ?? "/"}`,
+        sourceUrl: a!.landingUrl ?? (process.env.APP_URL ?? "http://localhost:3300"),
         fbc: fbc!,
-        externalIdHash: externalIdHash(e.memberId),
+        externalIdHash: externalIdHash(e.leadId),
         valueCents: e.valueCents,
       }),
     });
@@ -336,4 +310,16 @@ export async function conversionsOverview(now = new Date()) {
       .filter((c) => c.status === status && (!kind || c.kind === kind))
       .reduce((s, c) => s + c._count._all, 0);
   return { settings, count, recent };
+}
+
+/**
+ * LGPD: o código do clique (fbclid) só serve para a API de Conversões, que aceita até ~90 dias.
+ * Depois disso é apagado do cadastro (o restante da origem continua para os relatórios).
+ */
+export async function purgeOldClickIds(now = new Date()): Promise<number> {
+  const r = await prisma.lead.updateMany({
+    where: { fbclid: { not: null }, createdAt: { lt: new Date(now.getTime() - 90 * 86_400_000) } },
+    data: { fbclid: null },
+  });
+  return r.count;
 }

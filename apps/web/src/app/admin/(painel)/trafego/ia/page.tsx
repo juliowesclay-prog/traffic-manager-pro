@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ShieldCheck, TrendingUp } from "lucide-react";
-import { AI_SUGGESTION_LABELS, AI_SUGGESTION_TO_ACTION, can, type ReviewedAnalysis } from "@prosed/core";
-import { Card, cn } from "@prosed/ui";
+import { AI_SUGGESTION_LABELS, AI_SUGGESTION_TO_ACTION, can, type ReviewedAnalysis } from "@tmp/core";
+import { Card, cn } from "@tmp/ui";
 import { AdminPageTitle } from "@/components/admin/page-title";
-import { requireStaff } from "@/server/auth";
+import { requireCompanyStaff } from "@/server/auth";
 import { aiProviderName } from "@/server/traffic/ai";
 import { AI_PERIODS, getAnalysis, listAnalyses } from "@/server/traffic/ai/analysis";
 import { activeConnection } from "@/server/traffic/connection";
@@ -22,7 +22,7 @@ export default async function TrafficAiPage({
 }: {
   searchParams: Promise<{ analise?: string }>;
 }) {
-  const { roles } = await requireStaff("traffic:read");
+  const { roles } = await requireCompanyStaff("traffic:read");
   const canManage = can(roles, "traffic:manage");
   const q = await searchParams;
   const provider = aiProviderName();
@@ -45,7 +45,7 @@ export default async function TrafficAiPage({
           <div className="grid gap-1 text-base">
             <p>
               A IA lê os números do período (investido, cliques, vendas, CAC) e os nomes das campanhas e
-              anúncios. <strong>Nenhum dado de associado</strong> (nome, CPF, telefone) é enviado.
+              anúncios. <strong>Nenhum dado pessoal de cliente</strong> (nome, CPF, telefone) é enviado.
             </p>
             <p>
               <strong>A IA só sugere.</strong> Nada é alterado na Meta pela IA. Pausar, reativar ou mudar

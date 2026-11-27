@@ -1,6 +1,6 @@
 import "server-only";
-import { addDays, dayInTimeZone, metaSituation, type MetaSituation } from "@prosed/core";
-import { prisma } from "@prosed/db";
+import { addDays, dayInTimeZone, metaSituation, type MetaSituation } from "@tmp/core";
+import { prisma } from "@/server/db";
 import { activeConnection } from "./connection";
 import { syncSettings } from "./sync";
 

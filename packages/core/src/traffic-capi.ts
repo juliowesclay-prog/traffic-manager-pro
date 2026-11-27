@@ -15,7 +15,7 @@ export type CapiKind = keyof typeof CAPI_EVENTS;
 
 export const CAPI_EVENT_LABELS: Record<CapiKind, string> = {
   CADASTRO: "Cadastro",
-  VENDA: "Venda (1ª mensalidade paga)",
+  VENDA: "Venda (1ª compra paga)",
 };
 
 export const CAPI_STATUS_LABELS = {
@@ -84,7 +84,7 @@ export interface CapiEventInput {
   kind: CapiKind;
   eventId: string;
   eventTime: Date;
-  /** Endereço da página de entrada (site do Prosed). */
+  /** Endereço da página de entrada (site da empresa). */
   sourceUrl: string;
   fbc: string;
   /** Identificador da pessoa JÁ com hash SHA-256 (hex). */

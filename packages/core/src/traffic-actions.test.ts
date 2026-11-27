@@ -196,6 +196,7 @@ describe("permissões", () => {
     expect(can(["SUPERADMIN"], "traffic:approve")).toBe(true);
     expect(can(["MARKETING"], "traffic:approve")).toBe(false);
     expect(can(["MARKETING"], "traffic:manage")).toBe(true);
-    expect(can(["FINANCEIRO"], "traffic:manage")).toBe(false);
+    expect(can(["GESTOR"], "traffic:approve")).toBe(true);
+    expect(can(["LEITURA"], "traffic:manage")).toBe(false);
   });
 });
