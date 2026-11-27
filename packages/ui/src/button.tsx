@@ -13,7 +13,7 @@ export type ButtonSize = "md" | "lg";
 const variants: Record<ButtonVariant, string> = {
   primary: "bg-accent text-white hover:bg-accent-dark",
   cta: "bg-red text-white hover:bg-red-dark",
-  secondary: "border border-slate-300 bg-white text-ink hover:border-ink-faint hover:bg-navy-50",
+  secondary: "border border-slate-300 bg-surface text-ink hover:border-ink-faint hover:bg-navy-50",
   whatsapp: "bg-whatsapp text-white hover:bg-whatsapp-dark",
   ghost: "text-ink hover:bg-navy-50",
 };

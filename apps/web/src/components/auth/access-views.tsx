@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { can } from "@tmp/core";
 import { Alert } from "@tmp/ui";
-import { Logo } from "@/components/logo";
+import Link from "next/link";
+import { BrandMark } from "@/components/admin/brand-mark";
 import { getSiteSettings } from "@/lib/settings";
 import { getAuth } from "@/server/auth";
 import { devPrefilledAdminLogin } from "@/server/dev-login";
@@ -27,10 +28,12 @@ export async function AccessShell({ area, children }: { area: Area; children: Re
   const settings = await getSiteSettings();
   return (
     <>
-      <header className="border-b border-line bg-white">
+      <header className="bg-side">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
-          <Logo src={settings.logoUrl} name={settings.name} className="h-10 w-auto" />
-          <span className="rounded-full bg-navy px-3 py-1 text-sm font-bold text-white">
+          <Link href="/admin" className="rounded-lg">
+            <BrandMark name={settings.name} />
+          </Link>
+          <span className="rounded-full bg-side-2 px-3 py-1 text-xs font-semibold text-side-ink">
             {TEXT[area].badge}
           </span>
         </div>
@@ -100,7 +103,7 @@ export async function MfaEnrollView({ area }: { area: Area }) {
         <li>No aplicativo, escolha “adicionar conta” e leia o QR Code abaixo.</li>
         <li>Digite o código de 6 números que aparecer no aplicativo.</li>
       </ol>
-      <div className="flex flex-col items-start gap-4 rounded-xl border border-line bg-white p-6 sm:flex-row sm:items-center">
+      <div className="flex flex-col items-start gap-4 rounded-xl border border-line bg-surface p-6 sm:flex-row sm:items-center">
         <img
           src={data.qrDataUrl}
           alt="QR Code para adicionar a conta no aplicativo autenticador"

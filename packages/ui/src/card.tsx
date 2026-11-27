@@ -3,7 +3,7 @@ import { cn } from "./cn";
 
 export function Card({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("rounded-xl border border-line bg-white p-5 shadow-card", className)} {...props}>
+    <div className={cn("rounded-xl border border-line bg-surface p-5 shadow-card", className)} {...props}>
       {children}
     </div>
   );
@@ -26,7 +26,7 @@ export function FeatureCard({
     <Card className="flex flex-col gap-3">
       <span
         aria-hidden="true"
-        className="inline-flex size-10 items-center justify-center rounded-lg bg-accent-50 text-accent-dark"
+        className="inline-flex size-10 items-center justify-center rounded-lg bg-accent-50 text-accent-text"
       >
         {icon}
       </span>

@@ -31,8 +31,8 @@ export function DailyBarChart({ data, label }: { data: { day: string; count: num
           const y = padT + plotH - (t / niceMax) * plotH;
           return (
             <g key={t}>
-              <line x1={padL} x2={W - padR} y1={y} y2={y} stroke="#dfe5ef" strokeWidth={1} />
-              <text x={padL - 6} y={y + 4} textAnchor="end" fontSize="11" fill="#3f4b63">
+              <line x1={padL} x2={W - padR} y1={y} y2={y} className="stroke-line" strokeWidth={1} />
+              <text x={padL - 6} y={y + 4} textAnchor="end" fontSize="11" className="fill-ink-soft">
                 {t}
               </text>
             </g>
@@ -59,7 +59,7 @@ export function DailyBarChart({ data, label }: { data: { day: string; count: num
                   y={H - 6}
                   textAnchor="middle"
                   fontSize="11"
-                  fill="#3f4b63"
+                  className="fill-ink-soft"
                 >
                   {fmt(d.day)}
                 </text>

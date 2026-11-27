@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Sora } from "next/font/google";
+import { cookies } from "next/headers";
 import { connection } from "next/server";
 import type { CSSProperties, ReactNode } from "react";
 import { getSiteSettings } from "@/lib/settings";
@@ -31,6 +32,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // configurada no painel aparecer na hora, sem novo deploy.
   await connection();
   const { colors } = await getSiteSettings();
+  // Tema escolhido no menu (cookie). Sem cookie, o CSS segue o tema do sistema.
+  const tema = (await cookies()).get("tema")?.value;
+  const theme = tema === "light" || tema === "dark" ? tema : undefined;
   const style = {
     "--brand-navy": colors.navy,
     "--brand-red": colors.red,
@@ -38,11 +42,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   } as CSSProperties;
 
   return (
-    <html lang="pt-BR" style={style} className={`${inter.variable} ${sora.variable}`}>
+    <html lang="pt-BR" style={style} data-theme={theme} className={`${inter.variable} ${sora.variable}`}>
       <body className="min-h-dvh antialiased">
         <a
           href="#conteudo"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-white focus:px-5 focus:py-4 focus:text-base focus:font-bold focus:text-navy"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-surface focus:px-5 focus:py-4 focus:text-base focus:font-bold focus:text-navy"
         >
           Pular para o conteúdo
         </a>
