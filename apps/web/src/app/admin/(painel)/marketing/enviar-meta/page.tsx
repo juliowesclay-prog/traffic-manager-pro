@@ -30,7 +30,7 @@ export default async function SendToMetaPage() {
           <ul className="mt-3 grid gap-2">
             {approved.map((c) => (
               <li key={c.id} className="border-b border-line pb-2">
-                <Link href={`/admin/marketing/biblioteca/${c.id}`} className="font-semibold text-accent-dark underline">
+                <Link href={`/admin/marketing/biblioteca/${c.id}`} className="font-semibold text-accent-text underline">
                   {c.name}
                 </Link>
                 <span className="text-sm text-ink-soft">

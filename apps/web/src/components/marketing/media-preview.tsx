@@ -21,7 +21,7 @@ export function MediaPreview({
   if (asset.kind === "VIDEO") {
     if (!controls)
       return (
-        <div className={cn("grid place-items-center bg-navy text-white", className)}>
+        <div className={cn("grid place-items-center bg-side text-white", className)}>
           <Film aria-hidden="true" className="size-8 opacity-80" />
           <span className="sr-only">{alt}</span>
         </div>

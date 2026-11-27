@@ -52,7 +52,7 @@ export default async function CreativePage({ params }: { params: Promise<{ id: s
   return (
     <>
       <p className="mb-3 text-sm">
-        <Link href="/admin/marketing/biblioteca" className="font-semibold text-accent-dark underline">
+        <Link href="/admin/marketing/biblioteca" className="font-semibold text-accent-text underline">
           ← Biblioteca
         </Link>
       </p>
@@ -129,7 +129,7 @@ export default async function CreativePage({ params }: { params: Promise<{ id: s
                   </p>
                   <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     {v.assets.map((a, i) => (
-                      <a key={a.id} href={fileUrl(a.id, true)} className="font-semibold text-accent-dark underline" download>
+                      <a key={a.id} href={fileUrl(a.id, true)} className="font-semibold text-accent-text underline" download>
                         Baixar {v.assets.length > 1 ? `página ${i + 1}` : "arquivo"}
                       </a>
                     ))}

@@ -22,7 +22,7 @@ export function MarketingTabs() {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "-mb-px flex min-h-11 items-center border-b-2 px-3 text-sm font-semibold whitespace-nowrap",
-                  active ? "border-accent text-accent-dark" : "border-transparent text-ink-soft hover:text-ink",
+                  active ? "border-accent text-accent-text" : "border-transparent text-ink-soft hover:text-ink",
                 )}
               >
                 {t.label}

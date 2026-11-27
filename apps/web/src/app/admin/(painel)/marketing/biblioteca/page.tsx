@@ -98,7 +98,7 @@ export default async function LibraryPage({
             <li key={c.id}>
               <Link
                 href={`/admin/marketing/biblioteca/${c.id}`}
-                className="block h-full overflow-hidden rounded-xl border border-line bg-white shadow-card hover:border-accent"
+                className="block h-full overflow-hidden rounded-xl border border-line bg-surface shadow-card hover:border-accent"
                 data-testid={`criativo-${c.id}`}
               >
                 <MediaPreview asset={c.cover} alt={`Prévia de ${c.name}`} className="aspect-square w-full" />

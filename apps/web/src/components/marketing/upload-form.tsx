@@ -113,7 +113,7 @@ export function UploadForm({
           accept={accept}
           multiple={multiple}
           aria-describedby={fileHint ? `arquivos-${purpose}-dica` : undefined}
-          className="min-h-11 w-full rounded-lg border border-dashed border-slate-300 bg-white p-3 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-accent-50 file:px-3 file:py-2 file:font-semibold file:text-accent-dark"
+          className="min-h-11 w-full rounded-lg border border-dashed border-slate-300 bg-surface p-3 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-accent-50 file:px-3 file:py-2 file:font-semibold file:text-accent-text"
         />
       </div>
       {files.length ? (

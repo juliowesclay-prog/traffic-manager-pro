@@ -40,10 +40,10 @@ export default async function MarketingHome() {
             <li key={s.href}>
               <Link
                 href={s.href}
-                className="flex h-full flex-col gap-3 rounded-xl border border-line bg-white p-5 shadow-card transition-colors hover:border-accent"
+                className="flex h-full flex-col gap-3 rounded-xl border border-line bg-surface p-5 shadow-card transition-colors hover:border-accent"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <span className="inline-flex size-10 items-center justify-center rounded-lg bg-accent-50 text-accent-dark">
+                  <span className="inline-flex size-10 items-center justify-center rounded-lg bg-accent-50 text-accent-text">
                     <SectionIcon name={s.icon} className="size-5" />
                   </span>
                   <span

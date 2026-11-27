@@ -31,7 +31,7 @@ export default async function BrandsPage() {
             <li key={b.id}>
               <Link
                 href={`/admin/marketing/marca/${b.id}`}
-                className="flex h-full items-center gap-4 rounded-xl border border-line bg-white p-4 shadow-card hover:border-accent"
+                className="flex h-full items-center gap-4 rounded-xl border border-line bg-surface p-4 shadow-card hover:border-accent"
               >
                 <MediaPreview
                   asset={b.logo ? { ...b.logo, kind: "IMAGEM" } : null}

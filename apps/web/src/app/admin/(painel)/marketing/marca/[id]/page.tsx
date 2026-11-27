@@ -26,7 +26,7 @@ export default async function BrandPage({ params }: { params: Promise<{ id: stri
   return (
     <>
       <p className="mb-3 text-sm">
-        <Link href="/admin/marketing/marca" className="font-semibold text-accent-dark underline">
+        <Link href="/admin/marketing/marca" className="font-semibold text-accent-text underline">
           ← Marcas
         </Link>
       </p>
