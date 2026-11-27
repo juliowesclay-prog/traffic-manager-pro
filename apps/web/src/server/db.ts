@@ -26,6 +26,12 @@ export const COMPANY_MODELS = new Set([
   "MetaConversionEvent",
   "Lead",
   "Sale",
+  // Marketing IA
+  "Brand",
+  "BrandFact",
+  "Creative",
+  "CreativeVersion",
+  "MediaAsset",
 ]);
 
 const COMPANY_SETTING = /^traffic\./;

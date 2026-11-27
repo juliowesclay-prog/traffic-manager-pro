@@ -17,3 +17,6 @@ playwright-report/
 # Acessos de demonstração gerados localmente (nunca versionar)
 *.local.txt
 .vercel/
+
+# Arquivos enviados ao Marketing (armazenamento local de desenvolvimento)
+.storage/

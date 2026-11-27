@@ -27,6 +27,12 @@ export const ADMIN_NAV_GROUPS = [
     ],
   },
   {
+    label: "Criação",
+    items: [
+      { href: "/admin/marketing", label: "Marketing", icon: "Palette", permission: "marketing:read" },
+    ],
+  },
+  {
     label: "Configuração",
     items: [
       { href: "/admin/trafego", label: "Conexão Meta", icon: "Link2", permission: "traffic:read" },

@@ -15,3 +15,5 @@ export * from "./traffic-actions";
 export * from "./traffic-capi";
 export * from "./sales-source";
 export * from "./attribution";
+export * from "./marketing";
+export * from "./media-probe";
