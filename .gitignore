@@ -16,3 +16,4 @@ playwright-report/
 
 # Acessos de demonstração gerados localmente (nunca versionar)
 *.local.txt
+.vercel/

@@ -1,4 +1,8 @@
 import { PrismaClient } from "@prisma/client";
+import { applyHostedDefaults } from "./hosted-env";
+
+// Prévia na Vercel: completa a configuração antes de qualquer uso (sem efeito fora da Vercel).
+applyHostedDefaults();
 
 export * from "@prisma/client";
 export * from "./crypto";
