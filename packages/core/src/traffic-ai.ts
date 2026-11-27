@@ -1,6 +1,6 @@
 /**
  * Gestor de Tráfego IA — IA analista (entrega 8.5). Regras puras: o que vai para a IA (só números
- * agregados, nunca dados de associados) e as travas aplicadas à resposta antes de mostrar na tela.
+ * agregados, nunca dados de clientes) e as travas aplicadas à resposta antes de mostrar na tela.
  * A IA só sugere; nenhuma sugestão é executada (ações com aprovação ficam para a 8.6).
  */
 

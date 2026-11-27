@@ -12,7 +12,7 @@ const ACCOUNT = "act_1000000000000001";
 
 test.beforeEach(async ({ page }) => {
   await resetRateLimits();
-  await staffLogin(page, "marketing@prosed.test");
+  await staffLogin(page, "marketing@trafficmanager.test");
 });
 
 test.describe("Gestor de Tráfego IA: painel", () => {
@@ -109,16 +109,16 @@ test.describe("Gestor de Tráfego IA: painel", () => {
     }
   });
 
-  test("miniaturas da Meta liberadas no CSP; financeiro não abre o painel", async ({ page, browser }) => {
+  test("miniaturas da Meta liberadas no CSP; sem empresa não abre o painel", async ({ page, browser }) => {
     const res = await page.goto("/admin/trafego/painel");
     expect(res!.headers()["content-security-policy"]).toContain(
       "img-src 'self' data: blob: https://*.fbcdn.net",
     );
     const ctx = await browser.newContext();
     const p = await ctx.newPage();
-    await staffLogin(p, "financeiro@prosed.test");
+    await staffLogin(p, "semempresa@trafficmanager.test");
     await p.goto("/admin/trafego/painel");
-    await expect(p).toHaveURL(/\/admin\/sem-permissao$/);
+    await expect(p).toHaveURL(/\/admin\/sem-empresa$/);
     await ctx.close();
   });
 });

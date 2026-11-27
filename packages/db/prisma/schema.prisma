@@ -1,0 +1,631 @@
+// Traffic Manager Pro — schema do banco.
+// Base (equipe, sessões, auditoria) veio do Prosed+ Saúde; tudo de tráfego é separado por empresa.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Configurações. Chaves de empresa usam o prefixo "<companyId>:" (ex.: "<id>:traffic.capi").
+model Setting {
+  key         String   @id
+  value       Json
+  description String?
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  @@map("settings")
+}
+
+/// Trilha de auditoria: somente inserção (nunca atualizar nem apagar).
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String?
+  /// Empresa em que a ação aconteceu (null = ação do sistema todo, ex.: usuários).
+  companyId String?  @db.Uuid
+  action    String
+  entity    String
+  entityId  String?
+  before    Json?
+  after     Json?
+  ip        String?
+  at        DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([actorId])
+  @@index([companyId, at])
+  @@index([at])
+  @@map("audit_logs")
+}
+
+enum Role {
+  SUPERADMIN
+  /// Aprova ações que aumentam gasto e define o teto.
+  GESTOR
+  /// Opera campanhas (pede ações).
+  MARKETING
+  LEITURA
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+/// Conta de acesso da equipe (e-mail + senha + autenticador).
+model User {
+  id                 String     @id @default(uuid()) @db.Uuid
+  name               String
+  email              String     @unique
+  passwordHash       String?
+  status             UserStatus @default(ACTIVE)
+  mfaSecretEnc       String?
+  mfaEnabledAt       DateTime?
+  mfaLastStep        Int?
+  /// Senha provisória criada por um administrador: precisa ser trocada no primeiro acesso.
+  mustChangePassword Boolean    @default(false)
+  failedLoginCount   Int        @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+  /// Registro de demonstração (seed demo). Nunca existe em produção.
+  isDemo             Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  roles     UserRole[]
+  sessions  Session[]
+  companies CompanyMember[]
+
+  @@map("users")
+}
+
+model UserRole {
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role
+  createdAt DateTime @default(now())
+
+  @@id([userId, role])
+  @@map("user_roles")
+}
+
+/// Sessão no servidor (cookie guarda só um token aleatório; aqui fica o hash). Revogável.
+model Session {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @db.Uuid
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash       String    @unique
+  /// Equipe só usa o painel depois de confirmar o código do autenticador nesta sessão.
+  mfaVerified     Boolean   @default(false)
+  /// Empresa aberta no painel nesta sessão.
+  activeCompanyId String?   @db.Uuid
+  ip              String?
+  userAgent       String?
+  createdAt       DateTime  @default(now())
+  lastSeenAt      DateTime  @default(now())
+  expiresAt       DateTime
+  revokedAt       DateTime?
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// Limite de tentativas por janela de tempo (login, API). Compartilhado entre servidores.
+model RateLimitBucket {
+  key         String
+  windowStart DateTime
+  count       Int      @default(1)
+
+  @@id([key, windowStart])
+  @@index([windowStart])
+  @@map("rate_limit_buckets")
+}
+
+// ─── Empresas (separação dos dados; base para o SaaS) ─────────────────
+
+enum CompanyStatus {
+  ATIVA
+  SUSPENSA
+}
+
+/// Empresa atendida. Cada uma tem sua conexão com a Meta, suas contas, vendas e configurações.
+model Company {
+  id        String          @id @default(uuid()) @db.Uuid
+  name      String
+  /// Identificador curto e único (ex.: "prosed-saude").
+  slug      String          @unique
+  status    CompanyStatus   @default(ATIVA)
+  timezone  String          @default("America/Sao_Paulo")
+  isDemo    Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  members   CompanyMember[]
+  apiKeys   ApiKey[]
+
+  @@map("companies")
+}
+
+/// Quem pode abrir cada empresa (SUPERADMIN abre todas).
+model CompanyMember {
+  companyId String   @db.Uuid
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([companyId, userId])
+  @@index([userId])
+  @@map("company_members")
+}
+
+/// Chave da API da fonte de vendas. Mostrada UMA vez; aqui fica só o hash (SHA-256 com pepper).
+model ApiKey {
+  id          String    @id @default(uuid()) @db.Uuid
+  companyId   String    @db.Uuid
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  /// Parte visível para reconhecer a chave (tmp_abcd1234).
+  prefix      String    @unique
+  secretHash  String
+  createdById String    @db.Uuid
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  revokedById String?   @db.Uuid
+
+  @@index([companyId])
+  @@map("api_keys")
+}
+
+// ─── Fonte de vendas (substitui os associados do Prosed) ─────────────────
+
+/// Cadastro (lead) informado por um sistema da empresa. Sem dados pessoais: só o código do cliente
+/// no sistema de origem e de onde ele veio (utm/fbclid).
+model Lead {
+  id                 String    @id @default(uuid()) @db.Uuid
+  companyId          String    @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  externalId         String
+  createdAt          DateTime
+  source             String?
+  medium             String?
+  campaign           String?
+  term               String?
+  content            String?
+  /// IDs da Meta lidos dos parâmetros (só números).
+  campaignExternalId String?
+  adSetExternalId    String?
+  adExternalId       String?
+  /// Código do clique da Meta: só serve para a API de Conversões (apagado após 90 dias).
+  fbclid             String?
+  landingUrl         String?
+  clickedAt          DateTime?
+  isDemo             Boolean   @default(false)
+  receivedAt         DateTime  @default(now())
+  sales              Sale[]
+
+  @@unique([companyId, externalId])
+  @@index([companyId, createdAt])
+  @@index([campaignExternalId])
+  @@map("leads")
+}
+
+enum SaleStatus {
+  PAGA
+  ESTORNADA
+}
+
+/// Venda paga informada pela fonte de vendas. "first" = primeira compra do cliente (conta como venda
+/// no CAC); as demais só somam receita.
+model Sale {
+  id         String     @id @default(uuid()) @db.Uuid
+  companyId  String     @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  externalId String
+  leadId     String     @db.Uuid
+  lead       Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  amount     Int
+  first      Boolean    @default(true)
+  status     SaleStatus @default(PAGA)
+  paidAt     DateTime
+  refundedAt DateTime?
+  isDemo     Boolean    @default(false)
+  receivedAt DateTime   @default(now())
+
+  @@unique([companyId, externalId])
+  @@index([companyId, paidAt])
+  @@index([leadId])
+  @@map("sales")
+}
+
+// ─── Gestor de Tráfego (veio do Prosed+ Saúde, entregas 8.1 a 8.7) ─────────────────
+
+enum MetaConnectionStatus {
+  ATIVA
+  DESCONECTADA
+}
+
+/// Conexão com a Meta (Facebook/Instagram Ads). Só uma ATIVA por empresa. A chave de acesso fica CIFRADA
+/// (AES-256-GCM) e nunca sai do servidor. "simulado" só existe fora de produção (dados DEMO).
+model MetaConnection {
+  id               String               @id @default(uuid()) @db.Uuid
+  /// Empresa dona do registro (separação por empresa, preparado para SaaS).
+  companyId        String               @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  provider         String
+  status           MetaConnectionStatus @default(ATIVA)
+  metaUserId       String
+  metaUserName     String
+  tokenEnc         String?
+  tokenExpiresAt   DateTime?
+  scopes           String[]             @default([])
+  connectedById    String               @db.Uuid
+  connectedAt      DateTime             @default(now())
+  lastCheckedAt    DateTime?
+  /// Último erro da Meta (sem dados sensíveis), ex.: chave inválida — pede reconexão.
+  lastError        String?
+  disconnectedAt   DateTime?
+  disconnectedById String?              @db.Uuid
+  accounts         MetaAdAccount[]
+
+  @@index([status])
+  @@index([companyId])
+  @@map("meta_connections")
+}
+
+/// Conta de anúncios disponível na conexão. Só uma escolhida (a usada pela empresa).
+model MetaAdAccount {
+  id            String         @id @default(uuid()) @db.Uuid
+  /// Empresa dona do registro (separação por empresa, preparado para SaaS).
+  companyId     String         @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  connectionId  String         @db.Uuid
+  connection    MetaConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  /// ID da Meta, no formato act_123.
+  accountId     String
+  name          String
+  currency      String
+  timezone      String
+  /// account_status da Meta (1 = ativa, 2 = desativada, 101 = encerrada…).
+  accountStatus Int
+  businessName  String?
+  selected      Boolean        @default(false)
+  selectedById  String?        @db.Uuid
+  selectedAt    DateTime?
+  isDemo        Boolean        @default(false)
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([connectionId, accountId])
+  @@index([companyId])
+  @@map("meta_ad_accounts")
+}
+
+/// "state" do fluxo de autorização (anti-CSRF): guardado só como hash, uso único, vale 10 minutos.
+model MetaOAuthState {
+  id        String    @id @default(uuid()) @db.Uuid
+  /// Empresa dona do registro (separação por empresa, preparado para SaaS).
+  companyId String    @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  stateHash String    @unique
+  userId    String    @db.Uuid
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([companyId])
+  @@map("meta_oauth_states")
+}
+
+// ─── Entrega 8.2: sincronização dos anúncios (somente leitura da Meta) ─────────────────
+// Chaveado pela conta da Meta (act_…), não pela conexão: reconectar não perde o histórico.
+
+model MetaCampaign {
+  id              String    @id @default(uuid()) @db.Uuid
+  /// Empresa dona do registro (separação por empresa, preparado para SaaS).
+  companyId       String    @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  accountId       String
+  externalId      String
+  name            String
+  objective       String?
+  status          String
+  effectiveStatus String
+  /// Centavos (a Meta devolve na menor unidade da moeda).
+  dailyBudget     Int?
+  lifetimeBudget  Int?
+  budgetRemaining Int?
+  startTime       DateTime?
+  stopTime        DateTime?
+  isDemo          Boolean   @default(false)
+  syncedAt        DateTime
+  /// Não veio mais na última sincronização (excluída na Meta).
+  missingSince    DateTime?
+
+  @@unique([accountId, externalId])
+  @@index([companyId])
+  @@map("meta_campaigns")
+}
+
+model MetaAdSet {
+  id                 String    @id @default(uuid()) @db.Uuid
+  /// Empresa dona do registro (separação por empresa, preparado para SaaS).
+  companyId          String    @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  accountId          String
+  externalId         String
+  campaignExternalId String
+  name               String
+  status             String
+  effectiveStatus    String
+  dailyBudget        Int?
+  lifetimeBudget     Int?
+  optimizationGoal   String?
+  /// Resumo do público (idade, gênero, locais), sem dados de pessoas.
+  targetingSummary   String?
+  startTime          DateTime?
+  endTime            DateTime?
+  isDemo             Boolean   @default(false)
+  syncedAt           DateTime
+  missingSince       DateTime?
+
+  @@unique([accountId, externalId])
+  @@index([accountId, campaignExternalId])
+  @@index([companyId])
+  @@map("meta_ad_sets")
+}
+
+model MetaAd {
+  id                 String    @id @default(uuid()) @db.Uuid
+  /// Empresa dona do registro (separação por empresa, preparado para SaaS).
+  companyId          String    @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  accountId          String
+  externalId         String
+  adSetExternalId    String
+  campaignExternalId String
+  creativeExternalId String?
+  name               String
+  status             String
+  effectiveStatus    String
+  isDemo             Boolean   @default(false)
+  syncedAt           DateTime
+  missingSince       DateTime?
+
+  @@unique([accountId, externalId])
+  @@index([accountId, adSetExternalId])
+  @@index([companyId])
+  @@map("meta_ads")
+}
+
+model MetaCreative {
+  id           String   @id @default(uuid()) @db.Uuid
+  /// Empresa dona do registro (separação por empresa, preparado para SaaS).
+  companyId    String   @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  accountId    String
+  externalId   String
+  name         String?
+  title        String?
+  body         String?
+  callToAction String?
+  objectType   String?
+  /// Endereço da miniatura na Meta (expira; exibição na 8.4).
+  thumbnailUrl String?
+  isDemo       Boolean  @default(false)
+  syncedAt     DateTime
+
+  @@unique([accountId, externalId])
+  @@index([companyId])
+  @@map("meta_creatives")
+}
+
+enum MetaLevel {
+  CAMPANHA
+  CONJUNTO
+  ANUNCIO
+}
+
+/// Resultado de um dia, por campanha, conjunto ou anúncio (números como a Meta informa).
+model MetaInsightDaily {
+  id            String    @id @default(uuid()) @db.Uuid
+  /// Empresa dona do registro (separação por empresa, preparado para SaaS).
+  companyId     String    @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  accountId     String
+  level         MetaLevel
+  objectId      String
+  /// Dia no fuso da conta de anúncios.
+  date          DateTime  @db.Date
+  spend         Int
+  impressions   Int
+  reach         Int
+  clicks        Int
+  linkClicks    Int
+  landingViews  Int       @default(0)
+  leads         Int       @default(0)
+  registrations Int       @default(0)
+  conversations Int       @default(0)
+  purchases     Int       @default(0)
+  /// Valor das compras informado pela Meta (centavos). A venda real é a do Prosed (8.3).
+  purchaseValue Int       @default(0)
+  actions       Json?
+  isDemo        Boolean   @default(false)
+  syncedAt      DateTime
+
+  @@unique([accountId, level, objectId, date])
+  @@index([accountId, level, date])
+  @@index([companyId])
+  @@map("meta_insights_daily")
+}
+
+enum MetaSyncStatus {
+  EXECUTANDO
+  OK
+  PARCIAL
+  ERRO
+}
+
+enum MetaSyncTrigger {
+  MANUAL
+  AUTOMATICA
+}
+
+model MetaSyncRun {
+  id          String          @id @default(uuid()) @db.Uuid
+  /// Empresa dona do registro (separação por empresa, preparado para SaaS).
+  companyId   String          @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  accountId   String
+  trigger     MetaSyncTrigger
+  status      MetaSyncStatus  @default(EXECUTANDO)
+  since       DateTime        @db.Date
+  until       DateTime        @db.Date
+  counts      Json?
+  /// Mensagem segura para a tela (sem chaves nem detalhes internos).
+  error       String?
+  startedById String?         @db.Uuid
+  startedAt   DateTime        @default(now())
+  finishedAt  DateTime?
+
+  @@index([accountId, startedAt])
+  @@index([companyId])
+  @@map("meta_sync_runs")
+}
+
+// ─── Entrega 8.3: de qual anúncio veio cada cadastro ─────────────────
+
+// ─── Entrega 8.5: IA analista ────────────────────────────────────────
+
+enum TrafficAnalysisStatus {
+  EXECUTANDO
+  OK
+  ERRO
+}
+
+/// Análise da IA sobre os anúncios. Guarda exatamente o que foi enviado (só números agregados e nomes
+/// de campanhas/anúncios — nenhum dado de associado) e a resposta já revisada pelas travas.
+model TrafficAnalysis {
+  id           String                @id @default(uuid()) @db.Uuid
+  /// Empresa dona do registro (separação por empresa, preparado para SaaS).
+  companyId    String                @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  accountId    String
+  periodDays   Int
+  /// "claude" ou "simulado".
+  provider     String
+  model        String
+  status       TrafficAnalysisStatus @default(EXECUTANDO)
+  input        Json
+  output       Json?
+  /// Mensagem segura para a tela (sem chaves nem detalhes internos).
+  error        String?
+  inputTokens  Int?
+  outputTokens Int?
+  isDemo       Boolean               @default(false)
+  createdById  String                @db.Uuid
+  createdAt    DateTime              @default(now())
+  finishedAt   DateTime?
+
+  @@index([accountId, createdAt])
+  @@index([companyId])
+  @@map("traffic_analyses")
+}
+
+// ─── Entrega 8.6: ações nos anúncios com aprovação ───────────────────
+
+enum TrafficActionKind {
+  PAUSAR
+  REATIVAR
+  ORCAMENTO
+}
+
+enum TrafficActionStatus {
+  PENDENTE
+  EXECUTANDO
+  EXECUTADA
+  RECUSADA
+  CANCELADA
+  EXPIRADA
+  FALHOU
+}
+
+/// Ação na Meta pedida pelo painel. Pausar e reduzir orçamento são executados na hora; reativar e
+/// aumentar orçamento (podem aumentar o gasto) só depois da aprovação de OUTRA pessoa e dentro do teto.
+/// Guarda o antes/depois e o teto da hora do pedido. Uma ação aberta por item (índice no banco).
+model TrafficAction {
+  id             String              @id @default(uuid()) @db.Uuid
+  /// Empresa dona do registro (separação por empresa, preparado para SaaS).
+  companyId      String              @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  accountId      String
+  level          MetaLevel
+  objectId       String
+  objectName     String
+  kind           TrafficActionKind
+  fromStatus     String
+  toStatus       String
+  /// Centavos.
+  fromBudget     Int?
+  toBudget       Int?
+  increasesSpend Boolean
+  totalBefore    Int
+  totalAfter     Int
+  capCents       Int?
+  reason         String
+  /// Análise da IA (8.5) que originou o pedido, se houver.
+  analysisId     String?             @db.Uuid
+  status         TrafficActionStatus
+  requestedById  String              @db.Uuid
+  requestedAt    DateTime            @default(now())
+  expiresAt      DateTime?
+  decidedById    String?             @db.Uuid
+  decidedAt      DateTime?
+  decisionNote   String?
+  executedAt     DateTime?
+  /// Mensagem segura para a tela (sem chaves nem detalhes internos).
+  error          String?
+  isDemo         Boolean             @default(false)
+
+  @@index([accountId, requestedAt])
+  @@index([status, expiresAt])
+  @@index([companyId])
+  @@map("traffic_actions")
+}
+
+// ─── Entrega 8.7: API de Conversões (fila de eventos para a Meta) ────
+
+enum ConversionKind {
+  CADASTRO
+  VENDA
+}
+
+enum ConversionStatus {
+  PENDENTE
+  ENVIADO
+  ERRO
+  DESCARTADO
+}
+
+/// Evento a enviar à Meta pela API de Conversões. Não guarda dados pessoais: o envio é montado na
+/// hora (código do clique + identificador com hash). Um evento por cadastro/venda (eventId único).
+model MetaConversionEvent {
+  id                 String           @id @default(uuid()) @db.Uuid
+  /// Empresa dona do registro (separação por empresa, preparado para SaaS).
+  companyId          String           @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  eventId            String           @unique
+  kind               ConversionKind
+  /// Cadastro (lead) da fonte de vendas.
+  leadId             String           @db.Uuid
+  eventTime          DateTime
+  /// Centavos (só venda).
+  valueCents         Int?
+  campaignExternalId String?
+  status             ConversionStatus @default(PENDENTE)
+  attempts           Int              @default(0)
+  nextAttemptAt      DateTime         @default(now())
+  /// Mensagem segura (sem chaves nem detalhes internos).
+  lastError          String?
+  sentAt             DateTime?
+  /// Enviado com código de teste (aparece só em "Eventos de teste" na Meta).
+  testMode           Boolean          @default(false)
+  isDemo             Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+
+  @@index([status, nextAttemptAt])
+  @@index([leadId])
+  @@index([createdAt])
+  @@index([companyId])
+  @@map("meta_conversion_events")
+}

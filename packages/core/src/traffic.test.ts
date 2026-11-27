@@ -58,9 +58,10 @@ describe("Gestor de Tráfego: conexão com a Meta", () => {
   it("perfil Marketing só mexe no tráfego", () => {
     expect(can(["MARKETING"], "traffic:manage")).toBe(true);
     expect(can(["MARKETING"], "admin:access")).toBe(true);
-    expect(can(["MARKETING"], "members:read")).toBe(false);
-    expect(can(["MARKETING"], "finance:read")).toBe(false);
+    expect(can(["MARKETING"], "users:manage")).toBe(false);
+    expect(can(["MARKETING"], "companies:manage")).toBe(false);
     expect(can(["SUPERADMIN"], "traffic:manage")).toBe(true);
-    expect(can(["FINANCEIRO"], "traffic:read")).toBe(false);
+    expect(can(["LEITURA"], "traffic:read")).toBe(true);
+    expect(can(["LEITURA"], "traffic:manage")).toBe(false);
   });
 });

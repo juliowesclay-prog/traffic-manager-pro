@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { prisma, resetRateLimits, staffLogin } from "./helpers";
+import { prisma, resetRateLimits, staffLogin, DEMO_COMPANY_A } from "./helpers";
 
 /**
  * Entrega 8.6 — ações nos anúncios com aprovação (Meta SIMULADA, dados DEMO):
@@ -14,7 +14,7 @@ const C1 = "2380000000000001"; // DEMO Vendas — ativa, R$ 50/dia
 const C2 = "2380000000000002"; // DEMO Cadastros — pausada, R$ 20/dia
 const STATE = "simulado.meta.estado";
 const FAIL = "simulado.meta.falhas";
-const SETTINGS = "traffic.actions";
+const SETTINGS = `${DEMO_COMPANY_A}:traffic.actions`;
 
 async function setSettings(v: { enabled: boolean; dailyCapCents: number | null; maxIncreasePct: number }) {
   await prisma.setting.upsert({
@@ -61,7 +61,7 @@ async function submit(page: Page, q: Record<string, string>, button: RegExp) {
 async function asSuperadmin(browser: Browser) {
   const ctx = await browser.newContext();
   const p = await ctx.newPage();
-  await staffLogin(p, "superadmin@prosed.test");
+  await staffLogin(p, "superadmin@trafficmanager.test");
   return { ctx, p };
 }
 
@@ -73,7 +73,7 @@ test.beforeAll(async () => {
 test.beforeEach(async ({ page }) => {
   await resetRateLimits();
   await prisma.setting.deleteMany({ where: { key: FAIL } });
-  await staffLogin(page, "marketing@prosed.test");
+  await staffLogin(page, "marketing@trafficmanager.test");
 });
 test.afterAll(async ({ browser }) => {
   // Volta a Meta simulada ao estado inicial, desliga as ações e sincroniza de novo.
@@ -158,7 +158,7 @@ test.describe("Gestor de Tráfego IA: ações com aprovação", () => {
 
     expect((await simState())[C1]?.status).toBe("ACTIVE");
     const done = await prisma.trafficAction.findUniqueOrThrow({ where: { id: row.id } });
-    const sa = await prisma.user.findUniqueOrThrow({ where: { email: "superadmin@prosed.test" } });
+    const sa = await prisma.user.findUniqueOrThrow({ where: { email: "superadmin@trafficmanager.test" } });
     expect(done).toMatchObject({ status: "EXECUTADA", decidedById: sa.id });
     expect(
       await prisma.auditLog.count({ where: { action: "traffic.action_approved", entityId: row.id } }),
@@ -270,7 +270,7 @@ test.describe("Gestor de Tráfego IA: ações com aprovação", () => {
     ).toBe(1);
   });
 
-  test("permissões: marketing não muda o teto; financeiro não abre", async ({ page, browser }) => {
+  test("permissões: marketing não muda o teto; sem empresa não abre", async ({ page, browser }) => {
     await page.goto("/admin/trafego/acoes");
     await expect(page.getByText("Só quem pode aprovar ações altera o teto")).toBeVisible();
     await expect(page.getByText("Alterar teto e regras")).toHaveCount(0);
@@ -288,9 +288,9 @@ test.describe("Gestor de Tráfego IA: ações com aprovação", () => {
 
     const ctx2 = await browser.newContext();
     const f = await ctx2.newPage();
-    await staffLogin(f, "financeiro@prosed.test");
+    await staffLogin(f, "semempresa@trafficmanager.test");
     await f.goto("/admin/trafego/acoes");
-    await expect(f).toHaveURL(/\/admin\/sem-permissao$/);
+    await expect(f).toHaveURL(/\/admin\/sem-empresa$/);
     await ctx2.close();
   });
 });

@@ -1,4 +1,4 @@
-/** Data no formato AAAA-MM-DD (copiado de @prosed/core/billing, só o necessário ao Gestor de Tráfego). */
+/** Datas no formato AAAA-MM-DD. */
 export type IsoDate = string;
 
 export function addDays(date: IsoDate, days: number): IsoDate {

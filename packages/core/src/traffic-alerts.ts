@@ -120,7 +120,7 @@ export function trafficAlerts(i: AlertInput): TrafficAlert[] {
         objectId: c.id,
         title: `Gastou ${m(c.spend)} sem nenhuma venda: ${c.name}`,
         detail:
-          "Nenhuma assinatura paga veio desta campanha no período. Avalie pausar ou trocar o público e o anúncio.",
+          "Nenhuma venda paga veio desta campanha no período. Avalie pausar ou trocar o público e o anúncio.",
       });
     if (
       c.sales >= ALERT_RULES.minSalesForTrend &&

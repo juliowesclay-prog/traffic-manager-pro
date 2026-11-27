@@ -7,10 +7,10 @@ import {
   META_SCOPES,
   metaAccountStatusLabel,
   metaAccountUsable,
-} from "@prosed/core";
-import { Card, cn } from "@prosed/ui";
+} from "@tmp/core";
+import { Card, cn } from "@tmp/ui";
 import { AdminPageTitle } from "@/components/admin/page-title";
-import { requireStaff } from "@/server/auth";
+import { requireCompanyStaff } from "@/server/auth";
 import { trafficOverview } from "@/server/traffic/connection";
 import { TrafficTabs } from "./tabs";
 import { ConnectMetaButton, DisconnectMetaForm, RefreshAccountsButton, SelectAccountButton } from "./forms";
@@ -24,7 +24,7 @@ const day = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_
 const RESULTS: Record<string, { ok: boolean; text: string }> = {
   conectado: {
     ok: true,
-    text: "Conexão com a Meta concluída. Escolha abaixo a conta de anúncios do Prosed+ Saúde.",
+    text: "Conexão com a Meta concluída. Escolha abaixo a conta de anúncios da empresa.",
   },
   cancelado: { ok: false, text: "A autorização foi cancelada na Meta. Nada foi conectado." },
   invalido: {
@@ -50,7 +50,7 @@ export default async function TrafficPage({
 }: {
   searchParams: Promise<{ resultado?: string }>;
 }) {
-  const { roles } = await requireStaff("traffic:read");
+  const { roles } = await requireCompanyStaff("traffic:read");
   const canManage = can(roles, "traffic:manage");
   const q = await searchParams;
   const result = q.resultado ? RESULTS[q.resultado] : undefined;
@@ -62,7 +62,7 @@ export default async function TrafficPage({
     <>
       <AdminPageTitle
         title="Gestor de Tráfego IA"
-        subtitle="Anúncios do Facebook e do Instagram para vender mais assinaturas do Cartão do Trabalhador"
+        subtitle="Anúncios do Facebook e do Instagram ligados às vendas reais da empresa"
       />
 
       <TrafficTabs />
@@ -165,7 +165,7 @@ export default async function TrafficPage({
                 </p>
               ) : null}
               <p>
-                Ainda não conectado. Ao conectar, você entra na sua conta da Meta e autoriza o Prosed+ Saúde a{" "}
+                Ainda não conectado. Ao conectar, você entra na sua conta da Meta e autoriza o Traffic Manager Pro a{" "}
                 <strong>ler</strong> e <strong>gerenciar</strong> os anúncios. Nenhuma alteração que aumente
                 gastos é feita sem aprovação aqui no painel.
               </p>
@@ -181,7 +181,7 @@ export default async function TrafficPage({
         </Card>
 
         <Card data-testid="contas-anuncio">
-          <h2 className="text-xl font-bold text-navy">Conta de anúncios do Prosed+ Saúde</h2>
+          <h2 className="text-xl font-bold text-navy">Conta de anúncios da empresa</h2>
           {c ? (
             <>
               <p className="mt-1 text-base text-ink-soft">
@@ -190,7 +190,7 @@ export default async function TrafficPage({
                     Em uso: <strong className="text-navy">{selected.name}</strong> ({selected.accountId})
                   </>
                 ) : (
-                  "Nenhuma conta escolhida ainda. Escolha a conta que veicula os anúncios do Cartão do Trabalhador."
+                  "Nenhuma conta escolhida ainda. Escolha a conta que veicula os anúncios desta empresa."
                 )}
               </p>
               {c.accounts.length ? (

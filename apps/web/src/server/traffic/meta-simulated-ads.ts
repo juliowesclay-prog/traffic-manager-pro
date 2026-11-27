@@ -1,7 +1,8 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { addDays } from "@prosed/core";
-import { prisma, type Prisma } from "@prosed/db";
+import { addDays } from "@tmp/core";
+import { type Prisma } from "@tmp/db";
+import { prisma } from "@/server/db";
 import {
   MetaError,
   type MetaAdsReader,
@@ -93,7 +94,7 @@ const seed = (s: string) => createHash("sha256").update(s).digest().readUInt32BE
 const CAMPAIGNS = [
   {
     id: "2380000000000001",
-    name: "DEMO Vendas — Cartão do Trabalhador",
+    name: "DEMO Vendas — Produto principal",
     objective: "OUTCOME_SALES",
     status: "ACTIVE",
     daily: 5000,
@@ -240,7 +241,7 @@ export const simulatedReader: MetaAdsReader = {
       creative: {
         id: `2383${a.id.slice(4)}`,
         name: a.name,
-        title: a.ai ? "DEMO Consultas com desconto" : "DEMO Conheça o Cartão do Trabalhador",
+        title: a.ai ? "DEMO Consultas com desconto" : "DEMO Conheça o produto",
         body: "DEMO Texto de anúncio de demonstração.",
         callToAction: "SIGN_UP",
         objectType: a.ai ? "SHARE" : "VIDEO",

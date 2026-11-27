@@ -5,7 +5,7 @@ import {
   AI_SUGGESTION_TYPES,
   type AiAnalysisInput,
   type AiAnalysisOutput,
-} from "@prosed/core";
+} from "@tmp/core";
 
 /** Analista de tráfego: recebe só números agregados e devolve diagnóstico e sugestões. */
 export interface TrafficAnalyst {

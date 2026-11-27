@@ -1,25 +1,25 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
-import type { AiAnalysisInput } from "@prosed/core";
+import type { AiAnalysisInput } from "@tmp/core";
 import { analysisSchema, AnalystError, type TrafficAnalyst } from "./analyst";
 
 /**
  * Analista real: Claude (API da Anthropic). Recebe só números agregados e nomes de campanhas/anúncios;
- * nenhum dado de associado sai do sistema. A chave fica em ANTHROPIC_API_KEY (nunca no código).
+ * nenhum dado pessoal de cliente sai do sistema. A chave fica em ANTHROPIC_API_KEY (nunca no código).
  */
 
 export const claudeModel = () => process.env.AI_MODEL || "claude-opus-5-5";
 
 // Texto fixo (sem datas nem números) para aproveitar o cache de prompt entre análises.
-const SYSTEM = `Você é analista de tráfego pago (Meta Ads: Facebook e Instagram) do Prosed+ Saúde — "Cartão do Trabalhador".
-O produto é um CLUBE DE BENEFÍCIOS com descontos em saúde, vendido por assinatura mensal. NÃO é plano de saúde: nunca sugira textos que prometam cobertura, atendimento garantido ou cura (isso também fere as políticas de anúncios da Meta).
+const SYSTEM = `Você é analista de tráfego pago (Meta Ads: Facebook e Instagram) de uma empresa atendida pelo Traffic Manager Pro.
+Nunca sugira textos que firam as políticas de anúncios da Meta (promessas de cura, ganhos garantidos, atributos pessoais etc.).
 
 Sua tarefa: ler os dados do período e explicar, em português do Brasil simples (para quem não é especialista), o que está funcionando, o que não está e o que fazer.
 
 Regras:
 - Use SOMENTE os números do JSON recebido. Não invente métricas, datas, públicos ou comparações que não estejam nos dados. Cite os números nas evidências (em R$ com vírgula, ex.: R$ 120,50).
-- "vendas" são assinaturas com a 1ª mensalidade paga, confirmadas no sistema da Prosed (não são as "compras" estimadas pela Meta). CAC = investido ÷ vendas. Retorno = receita ÷ investido.
+- "vendas" são primeiras compras pagas, informadas pelo sistema de vendas da própria empresa (não são as "compras" estimadas pela Meta). CAC = investido ÷ vendas. Retorno = receita ÷ investido.
 - Com poucas vendas (menos de 5 no período) seja cauteloso: diga que a amostra é pequena e prefira "investigar" ou testes pequenos.
 - Em "alvo_id" use exatamente um "id" de campanha ou anúncio presente nos dados, ou null.
 - Você só sugere. Nada é executado automaticamente; pausar, reativar e mudar orçamento serão feitos por uma pessoa, com aprovação. Aumentar orçamento só quando os números justificarem claramente, com um valor moderado.

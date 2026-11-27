@@ -1,6 +1,6 @@
 import "server-only";
-import type { AiAnalysisInput, AiAnalysisOutput, AiSuggestion } from "@prosed/core";
-import { prisma } from "@prosed/db";
+import type { AiAnalysisInput, AiAnalysisOutput, AiSuggestion } from "@tmp/core";
+import { prisma } from "@/server/db";
 import { AnalystError, type TrafficAnalyst } from "./analyst";
 
 /**

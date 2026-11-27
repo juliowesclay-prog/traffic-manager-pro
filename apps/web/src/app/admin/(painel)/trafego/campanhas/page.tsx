@@ -11,11 +11,11 @@ import {
   ratio,
   REPORT_PERIODS,
   type MetaSituation,
-} from "@prosed/core";
-import { Card, cn } from "@prosed/ui";
+} from "@tmp/core";
+import { Card, cn } from "@tmp/ui";
 import { KpiCard } from "@/components/admin/kpi-card";
 import { AdminPageTitle } from "@/components/admin/page-title";
-import { requireStaff } from "@/server/auth";
+import { requireCompanyStaff } from "@/server/auth";
 import { campaignsReport, type Metrics } from "@/server/traffic/report";
 import { Eye, MousePointerClick, ShoppingCart, Users, Wallet } from "lucide-react";
 import { SyncIntervalForm, SyncNowButton } from "../forms";
@@ -80,7 +80,7 @@ export default async function CampaignsPage({
 }: {
   searchParams: Promise<{ periodo?: string; situacao?: string }>;
 }) {
-  const { roles } = await requireStaff("traffic:read");
+  const { roles } = await requireCompanyStaff("traffic:read");
   const canManage = can(roles, "traffic:manage");
   const q = await searchParams;
   const days = (REPORT_PERIODS as readonly number[]).includes(Number(q.periodo)) ? Number(q.periodo) : 30;
@@ -185,7 +185,7 @@ export default async function CampaignsPage({
           </form>
           <p className="mt-2 text-sm text-ink-soft">
             {br(r.since)} a {br(r.until)} (fuso da conta). Compras e cadastros são os informados pela Meta; as
-            vendas confirmadas no Prosed entram na próxima etapa (8.3).
+            vendas reais (fonte de vendas) estão na aba Vendas.
           </p>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2 2xl:grid-cols-5">

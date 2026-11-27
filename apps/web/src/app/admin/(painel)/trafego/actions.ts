@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { requireStaff } from "@/server/auth";
+import { requireCompanyStaff } from "@/server/auth";
 import {
   disconnectMeta,
   META_STATE_COOKIE,
@@ -12,7 +12,7 @@ import {
   startMetaConnect,
   type TrafficResult,
 } from "@/server/traffic/connection";
-import { can, parseBRL } from "@prosed/core";
+import { can, parseBRL } from "@tmp/core";
 import { runAnalysis } from "@/server/traffic/ai/analysis";
 import { saveCapiSettings, sendConversionsNow } from "@/server/traffic/conversions";
 import {
@@ -29,7 +29,7 @@ export type ConnectStart = TrafficResult & { next?: string };
 
 /** Começa a conexão: guarda o state num cookie httpOnly e devolve o endereço da Meta. */
 export async function connectMetaAction(_: ConnectStart | undefined, _f: FormData): Promise<ConnectStart> {
-  const { user } = await requireStaff("traffic:manage");
+  const { user } = await requireCompanyStaff("traffic:manage");
   const r = await startMetaConnect(user.id);
   if (!("url" in r)) return r;
   (await cookies()).set(META_STATE_COOKIE, r.state, {
@@ -43,7 +43,7 @@ export async function connectMetaAction(_: ConnectStart | undefined, _f: FormDat
 }
 
 export async function selectAccountAction(_: TrafficResult | undefined, f: FormData): Promise<TrafficResult> {
-  const { user } = await requireStaff("traffic:manage");
+  const { user } = await requireCompanyStaff("traffic:manage");
   const id = String(f.get("id") ?? "");
   if (!UUID.test(id)) return { ok: false, message: "Conta inválida." };
   const r = await selectAdAccount(user.id, id);
@@ -55,7 +55,7 @@ export async function refreshAccountsAction(
   _: TrafficResult | undefined,
   _f: FormData,
 ): Promise<TrafficResult> {
-  const { user } = await requireStaff("traffic:manage");
+  const { user } = await requireCompanyStaff("traffic:manage");
   const r = await refreshAdAccounts(user.id);
   revalidatePath("/admin/trafego");
   return r;
@@ -65,7 +65,7 @@ export async function disconnectMetaAction(
   _: TrafficResult | undefined,
   f: FormData,
 ): Promise<TrafficResult> {
-  const { user } = await requireStaff("traffic:manage");
+  const { user } = await requireCompanyStaff("traffic:manage");
   if (f.get("confirmo") !== "on") return { ok: false, message: "Marque a confirmação para desconectar." };
   const r = await disconnectMeta(user.id);
   revalidatePath("/admin/trafego");
@@ -73,14 +73,14 @@ export async function disconnectMetaAction(
 }
 
 export async function syncNowAction(_: TrafficResult | undefined, _f: FormData): Promise<TrafficResult> {
-  const { user } = await requireStaff("traffic:manage");
+  const { user } = await requireCompanyStaff("traffic:manage");
   const r = await manualSync(user.id);
   revalidatePath("/admin/trafego/campanhas");
   return r;
 }
 
 export async function syncIntervalAction(_: TrafficResult | undefined, f: FormData): Promise<TrafficResult> {
-  const { user } = await requireStaff("traffic:manage");
+  const { user } = await requireCompanyStaff("traffic:manage");
   const r = await saveSyncInterval(user.id, Number(f.get("intervalo")));
   if (r.ok) revalidatePath("/admin/trafego/campanhas");
   return r;
@@ -88,7 +88,7 @@ export async function syncIntervalAction(_: TrafficResult | undefined, f: FormDa
 
 /** Pede uma análise à IA (somente leitura: nada é alterado na Meta). */
 export async function analyzeAction(_: ConnectStart | undefined, f: FormData): Promise<ConnectStart> {
-  const { user } = await requireStaff("traffic:manage");
+  const { user } = await requireCompanyStaff("traffic:manage");
   const r = await runAnalysis(user.id, Number(f.get("periodo")));
   revalidatePath("/admin/trafego/ia");
   return r.ok
@@ -108,7 +108,7 @@ function done(r: ActionResult): ActionResult {
 
 /** Pede (ou executa, se diminui o gasto) uma ação na Meta. */
 export async function requestTrafficAction(_: ActionResult | undefined, f: FormData): Promise<ActionResult> {
-  const { user } = await requireStaff("traffic:manage");
+  const { user } = await requireCompanyStaff("traffic:manage");
   if (f.get("confirmo") !== "on") return { ok: false, message: "Marque a confirmação para continuar." };
   const valor = String(f.get("valor") ?? "").trim();
   const analise = String(f.get("analise") ?? "");
@@ -124,7 +124,7 @@ export async function requestTrafficAction(_: ActionResult | undefined, f: FormD
 
 /** Aprova (e executa) ou recusa um pedido que aumenta o gasto. Só quem tem traffic:approve. */
 export async function decideTrafficAction(_: ActionResult | undefined, f: FormData): Promise<ActionResult> {
-  const { user } = await requireStaff("traffic:approve");
+  const { user } = await requireCompanyStaff("traffic:approve");
   const id = String(f.get("id") ?? "");
   if (!UUID.test(id)) return { ok: false, message: "Pedido inválido." };
   const approve = f.get("decisao") === "aprovar";
@@ -134,7 +134,7 @@ export async function decideTrafficAction(_: ActionResult | undefined, f: FormDa
 }
 
 export async function cancelTrafficAction(_: ActionResult | undefined, f: FormData): Promise<ActionResult> {
-  const { user, roles } = await requireStaff("traffic:manage");
+  const { user, roles } = await requireCompanyStaff("traffic:manage");
   const id = String(f.get("id") ?? "");
   if (!UUID.test(id)) return { ok: false, message: "Pedido inválido." };
   return done(await cancelAction(user.id, id, can(roles, "traffic:approve")));
@@ -144,7 +144,7 @@ export async function saveActionSettingsAction(
   _: TrafficResult | undefined,
   f: FormData,
 ): Promise<TrafficResult> {
-  const { user } = await requireStaff("traffic:approve");
+  const { user } = await requireCompanyStaff("traffic:approve");
   const teto = String(f.get("teto") ?? "").trim();
   const cap = teto ? parseBRL(teto) : null;
   if (teto && cap == null) return { ok: false, message: "Teto inválido. Exemplo: 150,00" };
@@ -163,7 +163,7 @@ export async function saveCapiSettingsAction(
   _: TrafficResult | undefined,
   f: FormData,
 ): Promise<TrafficResult> {
-  const { user } = await requireStaff("traffic:approve");
+  const { user } = await requireCompanyStaff("traffic:approve");
   const r = await saveCapiSettings(user.id, {
     enabled: f.get("ligada") === "on",
     datasetId: String(f.get("dataset") ?? ""),
@@ -177,7 +177,7 @@ export async function sendConversionsAction(
   _: TrafficResult | undefined,
   _f: FormData,
 ): Promise<TrafficResult> {
-  const { user } = await requireStaff("traffic:manage");
+  const { user } = await requireCompanyStaff("traffic:manage");
   const r = await sendConversionsNow(user.id);
   revalidatePath("/admin/trafego/conversoes");
   return r;

@@ -1,19 +1,28 @@
 import "server-only";
-import { addDays, costPer, dayInTimeZone } from "@prosed/core";
-import { prisma, type Prisma } from "@prosed/db";
+import { addDays, costPer, dayInTimeZone } from "@tmp/core";
+import { prisma } from "@/server/db";
 import { isMetaSource } from "@/lib/attribution";
 import { activeConnection } from "./connection";
 
 /**
- * Vendas por anúncio (entrega 8.3): junta o INVESTIMENTO (Meta) com as VENDAS REAIS do Prosed.
- * - Cadastros: associados criados no período, pela origem gravada no cadastro (último clique em 30 dias).
- * - Vendas: primeira mensalidade paga (adesão) no período, de associados com origem.
- * - Receita: mensalidades pagas no período por esses associados, menos devoluções no período.
+ * Vendas por anúncio: junta o INVESTIMENTO (Meta) com as VENDAS REAIS informadas pela fonte de vendas
+ * (API /api/v1/eventos, ver server/sales-source.ts).
+ * - Cadastros: leads criados no período, pela origem informada (utm/fbclid do link de entrada).
+ * - Vendas: primeira compra paga no período, de leads com origem.
+ * - Receita: vendas pagas no período por esses leads, menos estornos no período.
  * - CAC = investido ÷ vendas; retorno = receita ÷ investido. Somente leitura.
  * Dados DEMO só entram quando a própria conta de anúncios é DEMO (ambiente de testes).
  */
 
-const CASH_IN = ["CONFIRMADA", "RECEBIDA", "DUPLICADA", "ESTORNADA"] as const;
+/** Origem do lead (null quando não veio de nenhum link marcado). */
+const ATTR = {
+  source: true,
+  campaignExternalId: true,
+  adExternalId: true,
+  fbclid: true,
+} as const;
+type LeadAttr = { source: string | null; campaignExternalId: string | null; adExternalId: string | null; fbclid: string | null };
+export const attrOf = (l: LeadAttr) => (l.source || l.campaignExternalId || l.fbclid ? l : null);
 const spStart = (iso: string) => new Date(`${iso}T00:00:00-03:00`);
 
 export interface SalesRow {
@@ -41,9 +50,9 @@ export async function salesByAd(days: number, now = new Date()) {
   const since = addDays(until, -(days - 1));
   const from = spStart(since);
   const to = spStart(addDays(until, 1));
-  const memberWhere: Prisma.MemberWhereInput = account.isDemo ? {} : { isDemo: false };
+  const demo = account.isDemo ? {} : { isDemo: false };
 
-  const [campaigns, ads, spendRows, signups, joins, paid, refunded, totalJoins] = await Promise.all([
+  const [campaigns, ads, spendRows, signups, joins, paid, refunded] = await Promise.all([
     prisma.metaCampaign.findMany({
       where: { accountId },
       select: { externalId: true, name: true, effectiveStatus: true },
@@ -62,50 +71,29 @@ export async function salesByAd(days: number, now = new Date()) {
       _sum: { spend: true },
     }),
     // Cadastros no período (com e sem origem).
-    prisma.member.findMany({
-      where: { ...memberWhere, createdAt: { gte: from, lt: to } },
-      select: { id: true, attribution: true },
+    prisma.lead.findMany({
+      where: { ...demo, createdAt: { gte: from, lt: to } },
+      select: { id: true, ...ATTR },
     }),
-    // Vendas (1ª mensalidade paga) no período, de quem tem origem.
-    prisma.subscriptionEvent.findMany({
-      where: {
-        fromStatus: "AGUARDANDO_PAGAMENTO",
-        toStatus: "ATIVA",
-        at: { gte: from, lt: to },
-        subscription: { member: { ...memberWhere, attribution: { isNot: null } } },
-      },
-      select: { subscription: { select: { member: { select: { id: true, attribution: true } } } } },
+    // Vendas (1ª compra paga) no período.
+    prisma.sale.findMany({
+      where: { ...demo, first: true, paidAt: { gte: from, lt: to } },
+      select: { lead: { select: { id: true, ...ATTR } } },
     }),
-    prisma.charge.findMany({
-      where: {
-        paidAt: { gte: from, lt: to },
-        status: { in: [...CASH_IN] },
-        subscription: { member: { ...memberWhere, attribution: { isNot: null } } },
-      },
-      select: { amount: true, subscription: { select: { member: { select: { attribution: true } } } } },
+    // Receita: tudo o que foi pago no período (estornos descontados abaixo).
+    prisma.sale.findMany({
+      where: { ...demo, paidAt: { gte: from, lt: to } },
+      select: { amount: true, lead: { select: ATTR } },
     }),
-    prisma.charge.findMany({
-      where: {
-        refundedAt: { gte: from, lt: to },
-        status: "ESTORNADA",
-        subscription: { member: { ...memberWhere, attribution: { isNot: null } } },
-      },
-      select: { amount: true, subscription: { select: { member: { select: { attribution: true } } } } },
-    }),
-    // Todas as adesões do período (inclui quem não tem origem), para a linha "sem origem".
-    prisma.subscriptionEvent.count({
-      where: {
-        fromStatus: "AGUARDANDO_PAGAMENTO",
-        toStatus: "ATIVA",
-        at: { gte: from, lt: to },
-        subscription: { member: memberWhere },
-      },
+    prisma.sale.findMany({
+      where: { ...demo, status: "ESTORNADA", refundedAt: { gte: from, lt: to } },
+      select: { amount: true, lead: { select: ATTR } },
     }),
   ]);
 
   const spendOf = new Map(spendRows.map((r) => [`${r.level}:${r.objectId}`, r._sum.spend ?? 0]));
   const known = new Set(campaigns.map((c) => c.externalId));
-  type Attr = NonNullable<(typeof signups)[number]["attribution"]>;
+  type Attr = LeadAttr;
 
   /** Em qual linha cai uma origem. */
   const bucket = (a: Attr | null): string => {
@@ -169,18 +157,16 @@ export async function salesByAd(days: number, now = new Date()) {
       for (const a of ads.filter((x) => `c:${x.campaignExternalId}` === r.key))
         if ((spendOf.get(`ANUNCIO:${a.externalId}`) ?? 0) > 0) adRow(r, a.externalId);
 
-  for (const m of signups) add(m.attribution, "signups", 1);
-  const soldMembers = new Set<string>();
+  for (const l of signups) add(attrOf(l), "signups", 1);
+  // Uma venda por cliente no período (a primeira compra); sem origem cai em "sem_origem".
+  const soldLeads = new Set<string>();
   for (const j of joins) {
-    const m = j.subscription.member;
-    if (soldMembers.has(m.id)) continue;
-    soldMembers.add(m.id);
-    add(m.attribution, "sales", 1);
+    if (soldLeads.has(j.lead.id)) continue;
+    soldLeads.add(j.lead.id);
+    add(attrOf(j.lead), "sales", 1);
   }
-  for (const c of paid) add(c.subscription.member.attribution, "revenue", c.amount);
-  for (const c of refunded) add(c.subscription.member.attribution, "revenue", -c.amount);
-  // Sem origem: adesões que não vieram de nenhum link marcado.
-  row("sem_origem").sales = totalJoins - soldMembers.size;
+  for (const c of paid) add(attrOf(c.lead), "revenue", c.amount);
+  for (const c of refunded) add(attrOf(c.lead), "revenue", -c.amount);
 
   const order: Record<SalesRow["kind"], number> = {
     campanha: 0,

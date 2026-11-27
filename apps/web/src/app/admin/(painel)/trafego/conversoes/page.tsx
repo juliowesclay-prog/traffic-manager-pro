@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
-import { CAPI_EVENT_LABELS, CAPI_STATUS_LABELS, can, formatBRL } from "@prosed/core";
-import { Card, cn } from "@prosed/ui";
+import { CAPI_EVENT_LABELS, CAPI_STATUS_LABELS, can, formatBRL } from "@tmp/core";
+import { Card, cn } from "@tmp/ui";
 import { AdminPageTitle } from "@/components/admin/page-title";
-import { requireStaff } from "@/server/auth";
+import { requireCompanyStaff } from "@/server/auth";
 import { activeConnection } from "@/server/traffic/connection";
 import { conversionsOverview } from "@/server/traffic/conversions";
 import { TrafficTabs } from "../tabs";
@@ -21,7 +21,7 @@ const TONE = {
 } as const;
 
 export default async function ConversionsPage() {
-  const { roles } = await requireStaff("traffic:read");
+  const { roles } = await requireCompanyStaff("traffic:read");
   const canManage = can(roles, "traffic:manage");
   const canApprove = can(roles, "traffic:approve");
   const conn = await activeConnection();
@@ -51,8 +51,8 @@ export default async function ConversionsPage() {
           <ShieldCheck aria-hidden="true" className="mt-1 size-6 shrink-0 text-navy" />
           <div className="grid gap-2 text-base">
             <p>
-              Quando alguém que <strong>clicou num anúncio</strong> se cadastra ou paga a primeira
-              mensalidade, o Prosed avisa a Meta. Assim a Meta aprende quem compra e mostra os anúncios para
+              Quando alguém que <strong>clicou num anúncio</strong> se cadastra ou faz a primeira
+              compra (informados pela fonte de vendas), o Traffic Manager Pro avisa a Meta. Assim a Meta aprende quem compra e mostra os anúncios para
               pessoas parecidas.
             </p>
             <p>

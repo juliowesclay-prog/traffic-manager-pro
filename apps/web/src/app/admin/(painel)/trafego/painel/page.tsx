@@ -10,12 +10,12 @@ import {
   ShoppingCart,
   Wallet,
 } from "lucide-react";
-import { costPer, formatBRL, periodChange, ratio, type AlertLevel } from "@prosed/core";
-import { Card, cn } from "@prosed/ui";
+import { costPer, formatBRL, periodChange, ratio, type AlertLevel } from "@tmp/core";
+import { Card, cn } from "@tmp/ui";
 import { DailyChart } from "@/components/admin/daily-chart";
 import { KpiCard } from "@/components/admin/kpi-card";
 import { AdminPageTitle } from "@/components/admin/page-title";
-import { requireStaff } from "@/server/auth";
+import { requireCompanyStaff } from "@/server/auth";
 import { trafficDashboard } from "@/server/traffic/dashboard";
 import { TrafficTabs } from "../tabs";
 
@@ -72,7 +72,7 @@ export default async function TrafficDashboardPage({
 }: {
   searchParams: Promise<{ periodo?: string }>;
 }) {
-  await requireStaff("traffic:read");
+  await requireCompanyStaff("traffic:read");
   const q = await searchParams;
   const days = (PERIODS as readonly number[]).includes(Number(q.periodo)) ? Number(q.periodo) : 7;
   const d = await trafficDashboard(days);
@@ -148,7 +148,7 @@ export default async function TrafficDashboardPage({
           testId="painel-vendas"
           raw={c.sales}
           icon={<ShoppingCart className="size-6" />}
-          label="Vendas (assinaturas pagas)"
+          label="Vendas (1ª compra paga)"
           value={int(c.sales)}
           note={<Change cur={c.sales} prev={p.sales} />}
         />

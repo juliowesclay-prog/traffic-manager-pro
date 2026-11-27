@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Link2, RefreshCw, Sparkles, Unplug } from "lucide-react";
-import { Button, Checkbox } from "@prosed/ui";
+import { Button, Checkbox } from "@tmp/ui";
 import { ResultMessage } from "@/components/forms/result-message";
 import { useServerForm } from "@/components/forms/use-server-form";
 import type { TrafficResult } from "@/server/traffic/connection";
@@ -79,7 +79,7 @@ export function DisconnectMetaForm() {
       <ResultMessage result={result} />
       <Checkbox
         name="confirmo"
-        label="Confirmo: desconectar apaga a chave de acesso e o Prosed+ Saúde deixa de ler e gerenciar os anúncios."
+        label="Confirmo: desconectar apaga a chave de acesso e o Traffic Manager Pro deixa de ler e gerenciar os anúncios."
       />
       <Button
         type="submit"

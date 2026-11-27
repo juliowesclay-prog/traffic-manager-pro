@@ -1,4 +1,4 @@
-import { formatBRL } from "@prosed/core";
+import { formatBRL } from "@tmp/core";
 
 /**
  * Investido por dia (barras) e vendas por dia (pontos com número). Acessível: o gráfico tem um resumo

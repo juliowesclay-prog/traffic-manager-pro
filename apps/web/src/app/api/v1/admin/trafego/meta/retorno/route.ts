@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { requireStaff } from "@/server/auth";
+import { requireCompanyStaff } from "@/server/auth";
 import { finishMetaConnect, META_STATE_COOKIE } from "@/server/traffic/connection";
 
 /**
@@ -8,7 +8,7 @@ import { finishMetaConnect, META_STATE_COOKIE } from "@/server/traffic/connectio
  * "state" do cookie desta pessoa. Volta para a tela do módulo só com um código fixo de resultado.
  */
 export async function GET(request: Request) {
-  const { user } = await requireStaff("traffic:manage");
+  const { user } = await requireCompanyStaff("traffic:manage");
   const q = new URL(request.url).searchParams;
   const jar = await cookies();
   const cookieState = jar.get(META_STATE_COOKIE)?.value ?? null;

@@ -3,7 +3,7 @@ import { prisma, resetRateLimits, staffLogin } from "./helpers";
 
 /**
  * Entrega 8.5 — IA analista (SIMULADA, dados DEMO): pedir análise, ver diagnóstico e sugestões, travas
- * (alvo inventado descartado), erro da IA, limite de uso e o que é enviado (sem dados de associados).
+ * (alvo inventado descartado), erro da IA, limite de uso e o que é enviado (sem dados de clientes).
  */
 test.skip(
   process.env.META_PROVIDER !== "simulado" || process.env.AI_PROVIDER !== "simulado",
@@ -54,7 +54,7 @@ test.beforeEach(async ({ page }) => {
   await resetRateLimits();
   await setFailure(null);
   await prisma.trafficAnalysis.deleteMany({ where: { accountId: ACCOUNT, status: "EXECUTANDO" } });
-  await staffLogin(page, "marketing@prosed.test");
+  await staffLogin(page, "marketing@trafficmanager.test");
 });
 test.afterAll(async () => setFailure(null));
 
@@ -65,7 +65,7 @@ test.describe("Gestor de Tráfego IA: IA analista", () => {
     test.setTimeout(120_000);
     await ensureDemoAccount(page);
     await page.getByRole("link", { name: "IA analista" }).click();
-    await expect(page.getByText("Nenhum dado de associado")).toBeVisible();
+    await expect(page.getByText("Nenhum dado pessoal de cliente")).toBeVisible();
     await expect(page.getByRole("note")).toContainText("IA simulada");
 
     await ask(page, 30);
@@ -83,14 +83,10 @@ test.describe("Gestor de Tráfego IA: IA analista", () => {
     expect(sent).not.toMatch(/\d{3}\.\d{3}\.\d{3}-\d{2}/); // CPF formatado
     expect(sent).not.toMatch(/@/); // e-mail
     expect(sent).not.toMatch(/\(\d{2}\)\s?9\d{4}-?\d{4}/); // celular formatado
-    // Nenhum nome de associado (os IDs longos são de campanhas e anúncios da Meta).
-    const members = await prisma.member.findMany({
-      select: { fullName: true },
-      take: 50,
-      orderBy: { createdAt: "desc" },
-    });
-    for (const m of members) expect(sent).not.toContain(m.fullName);
-    expect(JSON.parse(sent)).not.toHaveProperty("associados");
+    // Nenhum código de cliente da fonte de vendas (os IDs longos são de campanhas e anúncios da Meta).
+    const leads = await prisma.lead.findMany({ select: { externalId: true }, take: 50, orderBy: { receivedAt: "desc" } });
+    for (const l of leads) expect(sent).not.toContain(l.externalId);
+    expect(JSON.parse(sent)).not.toHaveProperty("clientes");
 
     const row = await prisma.trafficAnalysis.findUniqueOrThrow({ where: { id } });
     expect(row).toMatchObject({ status: "OK", provider: "simulado", periodDays: 30, isDemo: true });
@@ -132,12 +128,12 @@ test.describe("Gestor de Tráfego IA: IA analista", () => {
     await expect(page.getByRole("alert").first()).toContainText("Muitas análises seguidas");
   });
 
-  test("financeiro não abre a IA analista", async ({ browser }) => {
+  test("sem empresa não abre a IA analista", async ({ browser }) => {
     const ctx = await browser.newContext();
     const p = await ctx.newPage();
-    await staffLogin(p, "financeiro@prosed.test");
+    await staffLogin(p, "semempresa@trafficmanager.test");
     await p.goto("/admin/trafego/ia");
-    await expect(p).toHaveURL(/\/admin\/sem-permissao$/);
+    await expect(p).toHaveURL(/\/admin\/sem-empresa$/);
     await ctx.close();
   });
 });

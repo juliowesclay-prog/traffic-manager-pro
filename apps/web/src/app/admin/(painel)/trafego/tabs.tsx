@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@prosed/ui";
+import { cn } from "@tmp/ui";
 
 const TABS = [
   { href: "/admin/trafego/painel", label: "Painel" },

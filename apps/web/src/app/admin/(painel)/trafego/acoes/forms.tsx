@@ -1,7 +1,7 @@
 "use client";
 
 import { Ban, CheckCircle2, Save, Send, X, Zap } from "lucide-react";
-import { Button, Checkbox, Field, TextAreaField } from "@prosed/ui";
+import { Button, Checkbox, Field, TextAreaField } from "@tmp/ui";
 import { ResultMessage } from "@/components/forms/result-message";
 import { useServerForm } from "@/components/forms/use-server-form";
 import type { TrafficResult } from "@/server/traffic/connection";

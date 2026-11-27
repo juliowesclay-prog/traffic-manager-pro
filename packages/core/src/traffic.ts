@@ -10,7 +10,7 @@ export const META_SCOPES = [...META_REQUIRED_SCOPES, ...META_OPTIONAL_SCOPES];
 
 export const META_SCOPE_LABELS: Record<string, string> = {
   ads_read: "Ler campanhas, anúncios e resultados",
-  ads_management: "Gerenciar anúncios (pausar, ajustar orçamento — sempre com aprovação no Prosed)",
+  ads_management: "Gerenciar anúncios (pausar, ajustar orçamento — sempre com aprovação no Traffic Manager Pro)",
   business_management: "Ver as contas de anúncio do Gerenciador de Negócios",
 };
 
