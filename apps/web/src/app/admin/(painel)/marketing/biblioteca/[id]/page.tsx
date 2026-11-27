@@ -1,4 +1,4 @@
-import { Download } from "lucide-react";
+import { Clapperboard, Download, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -25,7 +25,8 @@ import { STATUS_TONE } from "../status-tone";
 export const metadata: Metadata = { title: "Criativo" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
+const when = (d: Date) =>
+  d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
 
 export default async function CreativePage({ params }: { params: Promise<{ id: string }> }) {
   const { roles } = await requireCompanyStaff("marketing:read");
@@ -48,6 +49,8 @@ export default async function CreativePage({ params }: { params: Promise<{ id: s
   const current = c.versions[0]!;
   const locked = c.status === "ENVIADO_META" || c.status === "ARQUIVADO";
   const ready = storageReady();
+  const tipo = (current.spec as { tipo?: string } | null)?.tipo;
+  const recipe = tipo === "arte" || tipo === "carrossel" ? tipo : null;
 
   return (
     <>
@@ -61,7 +64,8 @@ export default async function CreativePage({ params }: { params: Promise<{ id: s
         subtitle={
           <>
             {CREATIVE_KIND_LABELS[c.kind]} · {CREATIVE_ORIGIN_LABELS[c.origin]} · versão {c.currentVersion}
-            {c.brand ? ` · ${c.brand.name}` : ""} · criado em {when(c.createdAt)} por {c.people[c.createdById] ?? "—"}
+            {c.brand ? ` · ${c.brand.name}` : ""} · criado em {when(c.createdAt)} por{" "}
+            {c.people[c.createdById] ?? "—"}
           </>
         }
         actions={
@@ -99,28 +103,63 @@ export default async function CreativePage({ params }: { params: Promise<{ id: s
                     {a.durationMs ? ` · ${formatDuration(a.durationMs)}` : ""}
                     {a.sizeBytes != null ? ` · ${formatBytes(Number(a.sizeBytes))}` : ""}
                   </p>
-                  <a href={fileUrl(a.id, true)} className={buttonClasses("secondary", "md", "w-fit")} download>
+                  <a
+                    href={fileUrl(a.id, true)}
+                    className={buttonClasses("secondary", "md", "w-fit")}
+                    download
+                  >
                     <Download aria-hidden="true" className="size-4" />
                     Baixar{c.kind === "CARROSSEL" ? ` página ${i + 1}` : ""}
                   </a>
                 </li>
               ))}
             </ul>
-            {c.kind === "CARROSSEL" ? (
-              <p className="mt-3 text-sm text-ink-soft">O download de todas as páginas em ZIP chega com a Etapa 3.</p>
-            ) : null}
+            <div className="mt-4 flex flex-wrap gap-3">
+              {c.kind === "CARROSSEL" ? (
+                <a
+                  href={`/api/v1/admin/marketing/criativos/${c.id}/zip?versao=${current.number}`}
+                  className={buttonClasses("secondary", "md", "w-fit")}
+                  download
+                >
+                  <Download aria-hidden="true" className="size-4" />
+                  Baixar todas as páginas (ZIP)
+                </a>
+              ) : null}
+              {canManage && !locked && recipe ? (
+                <Link
+                  href={`/admin/marketing/${recipe === "arte" ? "artes" : "carrossel"}?criativo=${c.id}`}
+                  className={buttonClasses("primary", "md", "w-fit")}
+                >
+                  <Pencil aria-hidden="true" className="size-4" />
+                  {recipe === "arte" ? "Editar a arte" : "Editar o carrossel"}
+                </Link>
+              ) : null}
+              {canManage && !locked && c.kind === "VIDEO" ? (
+                <Link
+                  href={`/admin/marketing/videos?criativo=${c.id}`}
+                  className={buttonClasses("primary", "md", "w-fit")}
+                >
+                  <Clapperboard aria-hidden="true" className="size-4" />
+                  Editar no editor de vídeos
+                </Link>
+              ) : null}
+            </div>
           </Card>
 
           <Card data-testid="versoes">
             <h2 className="font-display text-base font-semibold text-ink">Versões</h2>
-            <p className="mt-1 text-sm text-ink-soft">O arquivo original (versão 1) e todas as versões ficam guardados.</p>
+            <p className="mt-1 text-sm text-ink-soft">
+              O arquivo original (versão 1) e todas as versões ficam guardados.
+            </p>
             <ol className="mt-3 grid gap-3">
               {c.versions.map((v) => (
                 <li key={v.id} className="border-b border-line pb-3">
                   <p className="font-semibold">
                     Versão {v.number}
                     {v.number === c.approvedVersion ? (
-                      <span className="ml-2 rounded-full bg-saving-50 px-2 py-0.5 text-xs text-saving-dark">aprovada</span>
+                      <span className="ml-2 rounded-full bg-saving-50 px-2 py-0.5 text-xs text-saving-dark">
+                        aprovada
+                      </span>
                     ) : null}
                   </p>
                   <p className="text-sm text-ink-soft">
@@ -129,7 +168,12 @@ export default async function CreativePage({ params }: { params: Promise<{ id: s
                   </p>
                   <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     {v.assets.map((a, i) => (
-                      <a key={a.id} href={fileUrl(a.id, true)} className="font-semibold text-accent-text underline" download>
+                      <a
+                        key={a.id}
+                        href={fileUrl(a.id, true)}
+                        className="font-semibold text-accent-text underline"
+                        download
+                      >
                         Baixar {v.assets.length > 1 ? `página ${i + 1}` : "arquivo"}
                       </a>
                     ))}
@@ -139,7 +183,9 @@ export default async function CreativePage({ params }: { params: Promise<{ id: s
             </ol>
             {canManage && !locked && ready ? (
               <details className="mt-4">
-                <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-ink">Enviar nova versão</summary>
+                <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-ink">
+                  Enviar nova versão
+                </summary>
                 <div className="mt-2">
                   <NewVersionForm id={c.id} multiple={c.kind === "CARROSSEL"} />
                 </div>
@@ -191,7 +237,9 @@ export default async function CreativePage({ params }: { params: Promise<{ id: s
                 />
               </div>
               <div className="mt-6 border-t border-line pt-4">
-                <p className="mb-2 text-sm text-ink-soft">Duplicar cria um rascunho novo com a versão atual.</p>
+                <p className="mb-2 text-sm text-ink-soft">
+                  Duplicar cria um rascunho novo com a versão atual.
+                </p>
                 <DuplicateButton id={c.id} />
               </div>
             </Card>
@@ -200,7 +248,9 @@ export default async function CreativePage({ params }: { params: Promise<{ id: s
           {canManage && c.status !== "ENVIADO_META" ? (
             <Card>
               <details>
-                <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-red-dark">Excluir criativo</summary>
+                <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-red-dark">
+                  Excluir criativo
+                </summary>
                 <div className="mt-3">
                   <DeleteForm id={c.id} name={c.name} />
                 </div>

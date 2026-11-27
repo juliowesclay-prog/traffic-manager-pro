@@ -17,3 +17,7 @@ export * from "./sales-source";
 export * from "./attribution";
 export * from "./marketing";
 export * from "./media-probe";
+export * from "./art";
+export * from "./marketing-ai";
+export * from "./zip";
+export * from "./video";

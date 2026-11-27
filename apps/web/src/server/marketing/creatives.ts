@@ -11,6 +11,7 @@ import {
   type CreativeStatus,
   type Role,
 } from "@tmp/core";
+import type { Prisma } from "@tmp/db";
 import { audit } from "../audit";
 import { prisma } from "../db";
 import { currentCompanyId } from "../tenant";
@@ -33,7 +34,9 @@ const assetSelect = {
 
 /** Biblioteca: busca por nome, filtro por tipo e status. Arquivados só quando pedidos. */
 export async function listCreatives(filters: { q?: string; kind?: string; status?: string }) {
-  const kind = (CREATIVE_KINDS as readonly string[]).includes(filters.kind ?? "") ? (filters.kind as CreativeKind) : undefined;
+  const kind = (CREATIVE_KINDS as readonly string[]).includes(filters.kind ?? "")
+    ? (filters.kind as CreativeKind)
+    : undefined;
   const status = (CREATIVE_STATUSES as readonly string[]).includes(filters.status ?? "")
     ? (filters.status as CreativeStatus)
     : undefined;
@@ -55,7 +58,11 @@ export async function listCreatives(filters: { q?: string; kind?: string; status
       },
     },
   });
-  return rows.map((c) => ({ ...c, cover: c.versions[0]?.assets[0] ?? null, pages: c.versions[0]?.assets.length ?? 0 }));
+  return rows.map((c) => ({
+    ...c,
+    cover: c.versions[0]?.assets[0] ?? null,
+    pages: c.versions[0]?.assets.length ?? 0,
+  }));
 }
 
 export async function getCreative(id: string) {
@@ -71,7 +78,9 @@ export async function getCreative(id: string) {
   });
   if (!c) return null;
   const [campaign, people] = await Promise.all([
-    c.campaignId ? prisma.metaCampaign.findFirst({ where: { id: c.campaignId }, select: { id: true, name: true } }) : null,
+    c.campaignId
+      ? prisma.metaCampaign.findFirst({ where: { id: c.campaignId }, select: { id: true, name: true } })
+      : null,
     namesOf([c.createdById, c.approvedById, ...c.versions.map((v) => v.createdById)]),
   ]);
   return { ...c, campaign, people };
@@ -90,14 +99,26 @@ async function namesOf(ids: (string | null)[]) {
 async function checkLinks(brandId: string | null, campaignId: string | null): Promise<string | null> {
   if (brandId && !(await prisma.brand.findFirst({ where: { id: brandId }, select: { id: true } })))
     return "Marca não encontrada.";
-  if (campaignId && !(await prisma.metaCampaign.findFirst({ where: { id: campaignId }, select: { id: true } })))
+  if (
+    campaignId &&
+    !(await prisma.metaCampaign.findFirst({ where: { id: campaignId }, select: { id: true } }))
+  )
     return "Campanha não encontrada.";
   return null;
 }
 
 export async function createCreative(
   userId: string,
-  input: { name: string; brandId: string | null; campaignId: string | null; assetIds: string[] },
+  input: {
+    name: string;
+    brandId: string | null;
+    campaignId: string | null;
+    assetIds: string[];
+    /** Gerado aqui (arte, carrossel, vídeo editado, Canva): origem, receita e nota da versão 1. */
+    origin?: "IMPORTADO" | "IA" | "CANVA";
+    spec?: Prisma.InputJsonValue;
+    note?: string;
+  },
 ): Promise<CreativeResult> {
   const name = parseCreativeName(input.name);
   if (!name) return { ok: false, message: "Nome do criativo: de 2 a 120 letras." };
@@ -119,13 +140,22 @@ export async function createCreative(
         companyId,
         name,
         kind: kind.kind,
+        origin: input.origin ?? "IMPORTADO",
         brandId: input.brandId,
         campaignId: input.campaignId,
         createdById: userId,
       },
     });
     await tx.creativeVersion.create({
-      data: { id: versionId, companyId, creativeId: id, number: 1, note: "Arquivo original importado", createdById: userId },
+      data: {
+        id: versionId,
+        companyId,
+        creativeId: id,
+        number: 1,
+        note: input.note ?? "Arquivo original importado",
+        spec: input.spec,
+        createdById: userId,
+      },
     });
     for (const [position, a] of assets.entries())
       await tx.mediaAsset.update({ where: { id: a.id }, data: { versionId, position } });
@@ -144,19 +174,25 @@ export async function createCreative(
 export async function addVersion(
   userId: string,
   creativeId: string,
-  input: { assetIds: string[]; note: string },
+  input: { assetIds: string[]; note: string; spec?: Prisma.InputJsonValue },
 ): Promise<CreativeResult> {
   const c = await prisma.creative.findFirst({ where: { id: creativeId } });
   if (!c) return { ok: false, message: "Criativo não encontrado." };
   if (c.status === "ENVIADO_META" || c.status === "ARQUIVADO")
-    return { ok: false, message: "Criativo enviado à Meta ou arquivado não recebe versões. Duplique para continuar." };
+    return {
+      ok: false,
+      message: "Criativo enviado à Meta ou arquivado não recebe versões. Duplique para continuar.",
+    };
   const assets = await claimableAssets(userId, input.assetIds, "criativo");
   if (assets.length !== new Set(input.assetIds).size)
     return { ok: false, message: "Algum arquivo não terminou de enviar ou já foi usado. Envie de novo." };
   const kind = creativeKindFor(assets.map((a) => a.kind));
   if (!kind.ok) return kind;
   if (kind.kind !== c.kind)
-    return { ok: false, message: `Este criativo é ${CREATIVE_KIND_LABELS[c.kind].toLowerCase()}: a versão nova precisa ser do mesmo tipo.` };
+    return {
+      ok: false,
+      message: `Este criativo é ${CREATIVE_KIND_LABELS[c.kind].toLowerCase()}: a versão nova precisa ser do mesmo tipo.`,
+    };
 
   const number = c.currentVersion + 1;
   const versionId = randomUUID();
@@ -174,14 +210,29 @@ export async function addVersion(
     });
     if (r.count !== 1) return false;
     await tx.creativeVersion.create({
-      data: { id: versionId, companyId, creativeId: c.id, number, note: input.note.trim().slice(0, 300) || null, createdById: userId },
+      data: {
+        id: versionId,
+        companyId,
+        creativeId: c.id,
+        number,
+        note: input.note.trim().slice(0, 300) || null,
+        spec: input.spec,
+        createdById: userId,
+      },
     });
     for (const [position, a] of assets.entries())
       await tx.mediaAsset.update({ where: { id: a.id }, data: { versionId, position } });
     return true;
   });
-  if (!updated) return { ok: false, message: "Outra pessoa alterou este criativo agora. Recarregue a página." };
-  await audit({ actorId: userId, action: "marketing.version_added", entity: "Creative", entityId: c.id, after: { versao: number } });
+  if (!updated)
+    return { ok: false, message: "Outra pessoa alterou este criativo agora. Recarregue a página." };
+  await audit({
+    actorId: userId,
+    action: "marketing.version_added",
+    entity: "Creative",
+    entityId: c.id,
+    after: { versao: number },
+  });
   return {
     ok: true,
     message:
@@ -202,7 +253,10 @@ export async function updateCreativeDetails(
   if (!name) return { ok: false, message: "Nome do criativo: de 2 a 120 letras." };
   const linkError = await checkLinks(input.brandId, input.campaignId);
   if (linkError) return { ok: false, message: linkError };
-  await prisma.creative.updateMany({ where: { id }, data: { name, brandId: input.brandId, campaignId: input.campaignId } });
+  await prisma.creative.updateMany({
+    where: { id },
+    data: { name, brandId: input.brandId, campaignId: input.campaignId },
+  });
   await audit({
     actorId: userId,
     action: "marketing.creative_updated",
@@ -234,7 +288,8 @@ export async function changeCreativeStatus(
     where: { id, status: c.status },
     data: { status: to, ...(keepApproval ? {} : approval) },
   });
-  if (r.count !== 1) return { ok: false, message: "Outra pessoa alterou este criativo agora. Recarregue a página." };
+  if (r.count !== 1)
+    return { ok: false, message: "Outra pessoa alterou este criativo agora. Recarregue a página." };
   await audit({
     actorId: userId,
     action: to === "APROVADO" ? "marketing.creative_approved" : "marketing.creative_status",
@@ -243,14 +298,23 @@ export async function changeCreativeStatus(
     before: { status: c.status },
     after: { status: to, versao: c.currentVersion },
   });
-  return { ok: true, message: to === "APROVADO" ? `Versão ${c.currentVersion} aprovada.` : "Status alterado." };
+  return {
+    ok: true,
+    message: to === "APROVADO" ? `Versão ${c.currentVersion} aprovada.` : "Status alterado.",
+  };
 }
 
 /** Duplica a versão atual num criativo novo (rascunho), com cópia dos arquivos. */
 export async function duplicateCreative(userId: string, id: string): Promise<CreativeResult> {
   const c = await prisma.creative.findFirst({
     where: { id },
-    include: { versions: { orderBy: { number: "desc" }, take: 1, include: { assets: { orderBy: { position: "asc" } } } } },
+    include: {
+      versions: {
+        orderBy: { number: "desc" },
+        take: 1,
+        include: { assets: { orderBy: { position: "asc" } } },
+      },
+    },
   });
   const current = c?.versions[0];
   if (!c || !current) return { ok: false, message: "Criativo não encontrado." };
@@ -268,10 +332,27 @@ export async function duplicateCreative(userId: string, id: string): Promise<Cre
   try {
     await prisma.$transaction(async (tx) => {
       await tx.creative.create({
-        data: { id: newId, companyId, name, kind: c.kind, origin: c.origin, brandId: c.brandId, campaignId: c.campaignId, createdById: userId },
+        data: {
+          id: newId,
+          companyId,
+          name,
+          kind: c.kind,
+          origin: c.origin,
+          brandId: c.brandId,
+          campaignId: c.campaignId,
+          createdById: userId,
+        },
       });
       await tx.creativeVersion.create({
-        data: { id: versionId, companyId, creativeId: newId, number: 1, note: `Cópia de "${c.name}" (versão ${current.number})`, createdById: userId },
+        data: {
+          id: versionId,
+          companyId,
+          creativeId: newId,
+          number: 1,
+          note: `Cópia de "${c.name}" (versão ${current.number})`,
+          spec: current.spec ?? undefined,
+          createdById: userId,
+        },
       });
       for (const cp of copies) {
         const a = cp.from;
@@ -304,7 +385,13 @@ export async function duplicateCreative(userId: string, id: string): Promise<Cre
     await removeStored(copies.map((cp) => cp.key));
     throw e;
   }
-  await audit({ actorId: userId, action: "marketing.creative_duplicated", entity: "Creative", entityId: newId, after: { origem: c.id } });
+  await audit({
+    actorId: userId,
+    action: "marketing.creative_duplicated",
+    entity: "Creative",
+    entityId: newId,
+    after: { origem: c.id },
+  });
   return { ok: true, message: `Cópia criada: "${name}".`, id: newId };
 }
 
@@ -318,6 +405,8 @@ export async function deleteCreative(userId: string, id: string): Promise<Creati
   if (c.status === "ENVIADO_META")
     return { ok: false, message: "Criativo já enviado à Meta fica guardado para histórico. Use Arquivar." };
   const keys = c.versions.flatMap((v) => v.assets.map((a) => a.storageKey));
+  // Tentativas de envio que falharam saem junto (as que deram certo deixam o criativo como "Enviado").
+  await prisma.metaAdSubmission.deleteMany({ where: { creativeId: id, status: "FALHOU" } });
   await prisma.creative.deleteMany({ where: { id } });
   await removeStored(keys);
   await audit({
@@ -343,5 +432,16 @@ export async function approvedCreatives() {
 /** Números da biblioteca (painel do módulo). */
 export async function libraryCounts() {
   const rows = await prisma.creative.groupBy({ by: ["status"], _count: { _all: true } });
-  return Object.fromEntries(rows.map((r) => [r.status, r._count._all])) as Partial<Record<CreativeStatus, number>>;
+  return Object.fromEntries(rows.map((r) => [r.status, r._count._all])) as Partial<
+    Record<CreativeStatus, number>
+  >;
+}
+
+/** Foto usada como fundo de uma arte salva: deixa de ser "solta" e não é apagada pela limpeza. */
+export async function pinBackground(assetId: string | null) {
+  if (!assetId) return;
+  await prisma.mediaAsset.updateMany({
+    where: { id: assetId, versionId: null, purpose: "criativo", status: "PRONTO", kind: "IMAGEM" },
+    data: { purpose: "fundo" },
+  });
 }

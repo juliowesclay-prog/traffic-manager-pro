@@ -722,26 +722,30 @@ enum CreativeOrigin {
 
 /// Criativo da biblioteca (imagem, carrossel ou vídeo). Cada alteração gera uma versão nova.
 model Creative {
-  id              String            @id @default(uuid()) @db.Uuid
-  companyId       String            @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  id              String             @id @default(uuid()) @db.Uuid
+  companyId       String             @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
   name            String
   kind            CreativeKind
-  status          CreativeStatus    @default(RASCUNHO)
-  origin          CreativeOrigin    @default(IMPORTADO)
-  brandId         String?           @db.Uuid
-  brand           Brand?            @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  status          CreativeStatus     @default(RASCUNHO)
+  origin          CreativeOrigin     @default(IMPORTADO)
+  brandId         String?            @db.Uuid
+  brand           Brand?             @relation(fields: [brandId], references: [id], onDelete: SetNull)
   /// Campanha da Meta relacionada (opcional; id interno de meta_campaigns).
-  campaignId      String?           @db.Uuid
-  currentVersion  Int               @default(1)
+  campaignId      String?            @db.Uuid
+  currentVersion  Int                @default(1)
   /// Versão aprovada (a aprovação vale para uma versão; versão nova volta para edição).
   approvedVersion Int?
-  approvedById    String?           @db.Uuid
+  approvedById    String?            @db.Uuid
   approvedAt      DateTime?
-  createdById     String            @db.Uuid
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  isDemo          Boolean           @default(false)
+  createdById     String             @db.Uuid
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  isDemo          Boolean            @default(false)
+  /// Anúncios da Meta (id externo) que usam este criativo: enviados por aqui ou vinculados à mão (Etapa 7).
+  metaAdIds       String[]           @default([])
   versions        CreativeVersion[]
+  videoJobs       VideoJob[]
+  submissions     MetaAdSubmission[]
 
   @@index([companyId, createdAt])
   @@index([companyId, status])
@@ -756,6 +760,8 @@ model CreativeVersion {
   creative    Creative     @relation(fields: [creativeId], references: [id], onDelete: Cascade)
   number      Int
   note        String?
+  /// Receita da arte ou do carrossel gerado aqui (Etapas 2 e 3): permite editar e gerar versão nova.
+  spec        Json?
   createdById String       @db.Uuid
   createdAt   DateTime     @default(now())
   assets      MediaAsset[]
@@ -795,7 +801,7 @@ model MediaAsset {
   height       Int?
   durationMs   Int?
   rejectReason String?
-  /// "criativo" ou "logo".
+  /// "criativo", "logo" ou "fundo" (foto de fundo de uma arte salva; não é apagada pela limpeza).
   purpose      String
   versionId    String?          @db.Uuid
   version      CreativeVersion? @relation(fields: [versionId], references: [id], onDelete: Cascade)
@@ -809,4 +815,142 @@ model MediaAsset {
   @@index([companyId, status])
   @@index([versionId])
   @@map("media_assets")
+}
+
+// ─── Marketing IA, Etapas 2 a 7 ─────────────────
+
+/// Pedido ao Estúdio IA e o resultado (textos, ideias de arte, carrossel, roteiro). Histórico por empresa.
+model MarketingGeneration {
+  id           String   @id @default(uuid()) @db.Uuid
+  companyId    String   @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  brandId      String?  @db.Uuid
+  /// Resultado anterior que foi refinado (ajuste por texto).
+  parentId     String?  @db.Uuid
+  /// O que foi pedido (sem dados pessoais) e o que a IA devolveu, já conferido.
+  input        Json
+  output       Json
+  provider     String
+  model        String
+  inputTokens  Int?
+  outputTokens Int?
+  isDemo       Boolean  @default(false)
+  createdById  String   @db.Uuid
+  createdAt    DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@map("marketing_generations")
+}
+
+enum VideoJobKind {
+  TRANSCREVER
+  EDITAR
+}
+
+enum VideoJobStatus {
+  NA_FILA
+  PROCESSANDO
+  CONCLUIDO
+  FALHOU
+  CANCELADO
+}
+
+/// Fila de vídeos (Etapa 4), processada pelo servidor de vídeo com FFmpeg (fora da Vercel).
+model VideoJob {
+  id            String         @id @default(uuid()) @db.Uuid
+  companyId     String         @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  kind          VideoJobKind
+  creativeId    String         @db.Uuid
+  creative      Creative       @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+  /// Arquivo de origem (versão do criativo no momento do pedido).
+  sourceAssetId String         @db.Uuid
+  /// Plano da edição (cortes, formatos, legendas, logomarca, encerramento) — conferido no servidor.
+  spec          Json
+  status        VideoJobStatus @default(NA_FILA)
+  progress      Int            @default(0)
+  attempts      Int            @default(0)
+  /// Servidor de vídeo que pegou a tarefa e até quando ela é dele (se cair, volta para a fila).
+  lockedBy      String?
+  leaseUntil    DateTime?
+  error         String?
+  /// TRANSCREVER: trechos da fala. EDITAR: criativos gerados.
+  result        Json?
+  createdById   String         @db.Uuid
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  startedAt     DateTime?
+  finishedAt    DateTime?
+
+  @@index([status, createdAt])
+  @@index([companyId, creativeId])
+  @@map("video_jobs")
+}
+
+/// Conexão de uma pessoa com o Canva (Etapa 5). Chaves cifradas (AES-256-GCM), nunca saem do servidor.
+model CanvaConnection {
+  id         String   @id @default(uuid()) @db.Uuid
+  companyId  String   @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  userId     String   @db.Uuid
+  accessEnc  String
+  refreshEnc String
+  expiresAt  DateTime
+  scopes     String[] @default([])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([companyId, userId])
+  @@map("canva_connections")
+}
+
+/// "state" + PKCE do login no Canva: guardado como hash, uso único, vale 10 minutos.
+model CanvaOAuthState {
+  id          String    @id @default(uuid()) @db.Uuid
+  companyId   String    @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  stateHash   String    @unique
+  verifierEnc String
+  userId      String    @db.Uuid
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("canva_oauth_states")
+}
+
+enum MetaAdSubmissionStatus {
+  ENVIANDO
+  ENVIADO
+  FALHOU
+}
+
+/// Envio de um criativo aprovado para a Meta (Etapa 6). O anúncio SEMPRE nasce pausado.
+model MetaAdSubmission {
+  id              String                 @id @default(uuid()) @db.Uuid
+  companyId       String                 @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  creativeId      String                 @db.Uuid
+  creative        Creative               @relation(fields: [creativeId], references: [id], onDelete: Restrict)
+  versionNumber   Int
+  accountId       String
+  campaignId      String
+  adSetId         String
+  pageId          String
+  instagramId     String?
+  adName          String
+  primaryText     String
+  headline        String
+  description     String?
+  link            String
+  callToAction    String
+  metaImageHashes String[]               @default([])
+  metaVideoId     String?
+  metaCreativeId  String?
+  metaAdId        String?
+  status          MetaAdSubmissionStatus @default(ENVIANDO)
+  error           String?
+  isDemo          Boolean                @default(false)
+  createdById     String                 @db.Uuid
+  createdAt       DateTime               @default(now())
+  finishedAt      DateTime?
+
+  @@index([companyId, creativeId])
+  @@map("meta_ad_submissions")
 }

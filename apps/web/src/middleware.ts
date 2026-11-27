@@ -8,6 +8,7 @@ import { NextResponse, type NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID());
   const dev = process.env.NODE_ENV !== "production";
+  const files = storageOrigin();
 
   const csp = [
     `default-src 'self'`,
@@ -15,9 +16,11 @@ export function middleware(request: NextRequest) {
     // Estilos inline são usados pelo React/Next (atributo style); não executam código.
     `style-src 'self' 'unsafe-inline'`,
     // Miniaturas dos anúncios (Gestor de Tráfego) vêm dos servidores de imagem da Meta.
-    `img-src 'self' data: blob: https://*.fbcdn.net`,
+    `img-src 'self' data: blob: https://*.fbcdn.net${files}`,
+    // Vídeos do Marketing: do próprio site ou, com o R2, por link temporário assinado.
+    `media-src 'self' blob:${files}`,
     `font-src 'self'`,
-    `connect-src 'self'${dev ? " ws: wss:" : ""}`,
+    `connect-src 'self'${files}${dev ? " ws: wss:" : ""}`,
     `object-src 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,
@@ -34,11 +37,24 @@ export function middleware(request: NextRequest) {
   return response;
 }
 
+/** Origem do armazenamento R2 (envio e exibição direta por link assinado), ou "" sem R2. */
+function storageOrigin(): string {
+  if (process.env.STORAGE_DRIVER !== "r2") return "";
+  try {
+    const acct = process.env.R2_ACCOUNT_ID ?? "";
+    const raw =
+      process.env.R2_ENDPOINT ||
+      (/^[a-f0-9]{32}$/i.test(acct) ? `https://${acct}.r2.cloudflarestorage.com` : "");
+    return raw ? ` ${new URL(raw).origin}` : "";
+  } catch {
+    return "";
+  }
+}
+
 export const config = {
   matcher: [
     {
-      source:
-        "/((?!_next/static|_next/image|brand/|icon.svg|favicon.ico).*)",
+      source: "/((?!_next/static|_next/image|brand/|icon.svg|favicon.ico).*)",
       missing: [{ type: "header", key: "next-router-prefetch" }],
     },
   ],

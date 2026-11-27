@@ -16,7 +16,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!UUID.test(id)) return new Response(null, { status: 404 });
   const asset = await prisma.mediaAsset.findFirst({
     where: { id, status: "PRONTO" },
-    include: { version: { select: { number: true, creative: { select: { name: true } } } }, brandLogoOf: { select: { name: true } } },
+    include: {
+      version: { select: { number: true, creative: { select: { name: true } } } },
+      brandLogoOf: { select: { name: true } },
+    },
   });
   if (!asset || !asset.mimeType || asset.sizeBytes == null) return new Response(null, { status: 404 });
 
@@ -36,6 +39,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     ETag: `"${asset.sha256}"`,
   };
 
+  // R2: o navegador busca direto no armazenamento, por link assinado que vale 10 minutos.
+  const s = storage();
+  if (s.presignGet) {
+    const url = await s.presignGet(asset.storageKey, {
+      expiresSeconds: 600,
+      filename,
+      contentType: asset.mimeType,
+      download,
+    });
+    return new Response(null, {
+      status: 302,
+      headers: { Location: url, "Cache-Control": "private, no-store" },
+    });
+  }
+
   const range = request.headers.get("range");
   const m = range ? /^bytes=(\d*)-(\d*)$/.exec(range.trim()) : null;
   if (m && (m[1] || m[2])) {
@@ -46,12 +64,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${size}` } });
     }
     start = Math.max(0, start);
-    return new Response(storage().stream(asset.storageKey, { start, end }), {
+    return new Response(s.stream(asset.storageKey, { start, end }), {
       status: 206,
-      headers: { ...headers, "Content-Range": `bytes ${start}-${end}/${size}`, "Content-Length": String(end - start + 1) },
+      headers: {
+        ...headers,
+        "Content-Range": `bytes ${start}-${end}/${size}`,
+        "Content-Length": String(end - start + 1),
+      },
     });
   }
-  return new Response(storage().stream(asset.storageKey), { headers: { ...headers, "Content-Length": String(size) } });
+  return new Response(s.stream(asset.storageKey), {
+    headers: { ...headers, "Content-Length": String(size) },
+  });
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {

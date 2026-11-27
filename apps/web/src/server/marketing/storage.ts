@@ -4,15 +4,17 @@ import { copyFile, mkdir, open, rename, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import { AwsClient } from "aws4fetch";
 import type { ByteReader } from "@tmp/core";
+import { storageConfig, type S3Config } from "./storage-config";
 
 /**
  * Armazenamento PRIVADO dos arquivos do Marketing. Nada fica em pasta pública: todo download passa
  * pela rota do servidor, que confere login e empresa.
  *
- * Etapa 1: disco local (STORAGE_DRIVER=local, pasta STORAGE_LOCAL_DIR, padrão ".storage").
- * Próximas etapas: Cloudflare R2 (compatível com S3), com envio direto do navegador por link temporário
- * (a Vercel aceita no máximo 4,5 MB por requisição). As telas não mudam: só este "motorista".
+ * - "local": disco do servidor (desenvolvimento ou VPS), pasta STORAGE_LOCAL_DIR (padrão ".storage").
+ * - "r2": Cloudflare R2 (compatível com S3). O navegador envia e baixa DIRETO do R2 por links
+ *   temporários assinados (a Vercel aceita no máximo 4,5 MB por requisição). O bucket fica privado.
  */
 export interface StorageDriver {
   readonly name: string;
@@ -24,6 +26,13 @@ export interface StorageDriver {
   stream(key: string, range?: { start: number; end: number }): ReadableStream<Uint8Array>;
   copy(from: string, to: string): Promise<void>;
   remove(key: string): Promise<void>;
+  /** Só no R2: link temporário para o navegador enviar os bytes direto (PUT). */
+  presignPut?(key: string, expiresSeconds: number): Promise<string>;
+  /** Só no R2: link temporário para baixar/exibir, com nome e tipo do arquivo. */
+  presignGet?(
+    key: string,
+    opts: { expiresSeconds: number; filename: string; contentType: string; download: boolean },
+  ): Promise<string>;
 }
 
 export class TooLargeError extends Error {}
@@ -100,6 +109,113 @@ function localDriver(root: string): StorageDriver {
   };
 }
 
+/** Cloudflare R2 (ou outro S3 compatível, como MinIO nos testes), sempre privado. */
+function s3Driver(cfg: S3Config): StorageDriver {
+  const aws = new AwsClient({
+    accessKeyId: cfg.accessKeyId,
+    secretAccessKey: cfg.secretAccessKey,
+    service: "s3",
+    region: cfg.region,
+  });
+  const url = (key: string) => {
+    if (!KEY.test(key)) throw new Error("Chave de armazenamento inválida.");
+    return `${cfg.endpoint}/${encodeURIComponent(cfg.bucket)}/${key}`;
+  };
+  const check = async (res: Response, what: string) => {
+    if (!res.ok && res.status !== 206) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Armazenamento: ${what} falhou (${res.status}) ${text.slice(0, 200)}`);
+    }
+    return res;
+  };
+  const presign = async (u: string, method: "GET" | "PUT", expiresSeconds: number) => {
+    const target = new URL(u);
+    target.searchParams.set("X-Amz-Expires", String(expiresSeconds));
+    const signed = await aws.sign(new Request(target, { method }), { aws: { signQuery: true } });
+    return signed.url;
+  };
+  return {
+    name: "r2",
+    async write(key, body, maxBytes) {
+      // Usado só para arquivos gerados no servidor (artes, páginas de carrossel): cabem na memória.
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      const reader = body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > maxBytes) throw new TooLargeError("Arquivo maior que o permitido.");
+        chunks.push(value);
+      }
+      const buf = Buffer.concat(chunks);
+      await check(await aws.fetch(url(key), { method: "PUT", body: buf }), "gravar");
+      return total;
+    },
+    async size(key) {
+      const res = await aws.fetch(url(key), { method: "HEAD" });
+      if (res.status === 404) return null;
+      await check(res, "consultar");
+      const n = Number(res.headers.get("content-length"));
+      return Number.isFinite(n) ? n : null;
+    },
+    reader(key) {
+      return async (offset, length) => {
+        if (length <= 0) return new Uint8Array(0);
+        const res = await aws.fetch(url(key), {
+          headers: { Range: `bytes=${offset}-${offset + length - 1}` },
+        });
+        if (res.status === 416) return new Uint8Array(0);
+        await check(res, "ler");
+        return new Uint8Array(await res.arrayBuffer()).subarray(0, length);
+      };
+    },
+    stream(key, range) {
+      const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+      void (async () => {
+        try {
+          const res = await aws.fetch(
+            url(key),
+            range ? { headers: { Range: `bytes=${range.start}-${range.end}` } } : {},
+          );
+          await check(res, "ler");
+          if (!res.body) throw new Error("Armazenamento: resposta vazia.");
+          await res.body.pipeTo(writable);
+        } catch (e) {
+          await writable.abort(e).catch(() => undefined);
+        }
+      })();
+      return readable;
+    },
+    async copy(from, to) {
+      await check(
+        await aws.fetch(url(to), {
+          method: "PUT",
+          headers: { "x-amz-copy-source": `/${encodeURIComponent(cfg.bucket)}/${from}` },
+        }),
+        "copiar",
+      );
+    },
+    async remove(key) {
+      const res = await aws.fetch(url(key), { method: "DELETE" });
+      if (res.status !== 404) await check(res, "apagar");
+    },
+    presignPut(key, expiresSeconds) {
+      return presign(url(key), "PUT", expiresSeconds);
+    },
+    presignGet(key, opts) {
+      const u = new URL(url(key));
+      u.searchParams.set(
+        "response-content-disposition",
+        `${opts.download ? "attachment" : "inline"}; filename="${opts.filename}"`,
+      );
+      u.searchParams.set("response-content-type", opts.contentType);
+      u.searchParams.set("response-cache-control", "private, max-age=600");
+      return presign(u.toString(), "GET", opts.expiresSeconds);
+    },
+  };
+}
+
 export class StorageNotConfiguredError extends Error {
   constructor() {
     super(
@@ -110,13 +226,12 @@ export class StorageNotConfiguredError extends Error {
 
 let cached: StorageDriver | null = null;
 
-/** Motorista em uso. Na Vercel o disco é temporário: sem R2 configurado, o envio é recusado. */
+/** Motorista em uso. Na Vercel o disco é temporário: só o R2 é aceito lá. */
 export function storage(): StorageDriver {
   if (cached) return cached;
-  const driver = process.env.STORAGE_DRIVER ?? "local";
-  if (driver !== "local") throw new StorageNotConfiguredError(); // R2 entra junto com a Etapa 2
-  if (process.env.VERCEL) throw new StorageNotConfiguredError();
-  cached = localDriver(path.resolve(process.cwd(), process.env.STORAGE_LOCAL_DIR || ".storage"));
+  const cfg = storageConfig();
+  if (!cfg) throw new StorageNotConfiguredError();
+  cached = cfg.driver === "r2" ? s3Driver(cfg) : localDriver(cfg.dir);
   return cached;
 }
 
