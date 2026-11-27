@@ -89,7 +89,7 @@ export default async function SalesSourcePage() {
             Nunca envie nome, CPF, telefone ou e-mail: o <code>id</code> é o código do cliente no seu sistema.
           </li>
         </ol>
-        <pre className="overflow-x-auto rounded-xl bg-ink p-4 text-sm text-white">{example}</pre>
+        <pre className="overflow-x-auto rounded-xl bg-side p-4 text-sm text-side-ink">{example}</pre>
         <p className="text-sm text-ink-soft">
           Nos anúncios da Meta, cole em &ldquo;Parâmetros de URL&rdquo;:{" "}
           <code>

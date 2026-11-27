@@ -22,7 +22,7 @@ export function KpiCard({
 }) {
   return (
     <div
-      className="flex flex-col gap-2 rounded-xl border border-line bg-white p-4 shadow-card sm:p-5"
+      className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-4 shadow-card sm:p-5"
       data-testid={testId}
       data-valor={raw ?? undefined}
     >
@@ -30,7 +30,7 @@ export function KpiCard({
         <span
           aria-hidden="true"
           className={`grid size-7 place-items-center rounded-md [&>svg]:size-4 ${
-            tone === "alert" ? "bg-red-50 text-red" : "bg-accent-50 text-accent-dark"
+            tone === "alert" ? "bg-red-50 text-red" : "bg-accent-50 text-accent-text"
           }`}
         >
           {icon}

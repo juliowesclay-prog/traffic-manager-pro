@@ -33,7 +33,7 @@ const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Pau
 const money = (c: number | null) => (c == null ? "—" : formatBRL(c));
 const STATUS: Record<string, string> = { ACTIVE: "ativo", PAUSED: "pausado" };
 const st = (s: string) => STATUS[s] ?? s.toLowerCase();
-const selectCls = "min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-ink";
+const selectCls = "min-h-11 w-full rounded-lg border border-slate-300 bg-surface px-3 text-base text-ink";
 
 export default async function TrafficActionsPage({
   searchParams,
@@ -248,7 +248,7 @@ export default async function TrafficActionsPage({
             <div className="flex items-end">
               <button
                 type="submit"
-                className="inline-flex min-h-11 items-center rounded-[10px] border border-slate-300 bg-white px-4 text-sm font-semibold text-ink hover:bg-navy-50"
+                className="inline-flex min-h-11 items-center rounded-[10px] border border-slate-300 bg-surface px-4 text-sm font-semibold text-ink hover:bg-navy-50"
               >
                 Revisar
               </button>

@@ -109,7 +109,7 @@ export default async function TrafficDashboardPage({
       ) : null}
 
       <nav aria-label="Período do painel" className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex flex-wrap rounded-[10px] border border-line bg-white p-1">
+        <div className="inline-flex flex-wrap rounded-[10px] border border-line bg-surface p-1">
           {PERIODS.map((n) => (
             <Link
               key={n}
@@ -117,7 +117,7 @@ export default async function TrafficDashboardPage({
               aria-current={n === days ? "true" : undefined}
               className={cn(
                 "inline-flex min-h-9 items-center rounded-[7px] px-3 text-sm font-semibold",
-                n === days ? "bg-navy text-white" : "text-ink-soft hover:bg-navy-50 hover:text-ink",
+                n === days ? "bg-navy text-canvas" : "text-ink-soft hover:bg-navy-50 hover:text-ink",
               )}
             >
               Últimos {n} dias

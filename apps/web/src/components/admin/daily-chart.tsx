@@ -34,7 +34,14 @@ export function DailyChart({
         role="img"
         aria-label={`${label}: ${formatBRL(totalSpend)} investidos e ${totalSales} venda(s) em ${data.length} dias. Valores por dia na tabela abaixo.`}
       >
-        <line x1={padX} x2={W - padX} y1={padT + plotH} y2={padT + plotH} stroke="#e2e6ee" strokeWidth={1} />
+        <line
+          x1={padX}
+          x2={W - padX}
+          y1={padT + plotH}
+          y2={padT + plotH}
+          className="stroke-line"
+          strokeWidth={1}
+        />
         {data.map((d, i) => {
           const h = (d.spend / maxSpend) * plotH;
           const cx = padX + i * step + step / 2;
@@ -66,7 +73,7 @@ export function DailyChart({
                 </>
               ) : null}
               {i % labelEvery === 0 ? (
-                <text x={cx} y={H - 8} textAnchor="middle" fontSize="11" fill="#465068">
+                <text x={cx} y={H - 8} textAnchor="middle" fontSize="11" className="fill-ink-soft">
                   {short(d.day)}
                 </text>
               ) : null}

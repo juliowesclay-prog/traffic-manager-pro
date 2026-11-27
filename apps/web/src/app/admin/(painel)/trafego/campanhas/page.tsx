@@ -149,7 +149,7 @@ export default async function CampaignsPage({
                 id="periodo"
                 name="periodo"
                 defaultValue={days}
-                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
+                className="min-h-11 rounded-lg border border-slate-300 bg-surface px-3 text-sm"
               >
                 {REPORT_PERIODS.map((d) => (
                   <option key={d} value={d}>
@@ -166,7 +166,7 @@ export default async function CampaignsPage({
                 id="situacao"
                 name="situacao"
                 defaultValue={filter}
-                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
+                className="min-h-11 rounded-lg border border-slate-300 bg-surface px-3 text-sm"
               >
                 <option value="">Todas</option>
                 <option value="ativa">Ativas</option>
@@ -176,7 +176,7 @@ export default async function CampaignsPage({
             </div>
             <button
               type="submit"
-              className="inline-flex min-h-11 items-center rounded-[10px] border border-slate-300 bg-white px-4 text-sm font-semibold text-ink hover:bg-navy-50"
+              className="inline-flex min-h-11 items-center rounded-[10px] border border-slate-300 bg-surface px-4 text-sm font-semibold text-ink hover:bg-navy-50"
             >
               Ver
             </button>

@@ -145,7 +145,7 @@ export default async function TrafficAiPage({
                       data-testid={`sugestao-${i}`}
                       className={cn(
                         "rounded-xl border p-4",
-                        s.aumenta_gasto ? "border-amber-500 bg-amber-50" : "border-line bg-white",
+                        s.aumenta_gasto ? "border-amber-500 bg-amber-50" : "border-line bg-surface",
                       )}
                     >
                       <p className="text-sm font-bold text-ink-soft">
@@ -175,7 +175,7 @@ export default async function TrafficAiPage({
                       {canManage && s.alvo_id && AI_SUGGESTION_TO_ACTION[s.tipo] ? (
                         <Link
                           href={`/admin/trafego/acoes?${new URLSearchParams({ alvo: s.alvo_id, tipo: AI_SUGGESTION_TO_ACTION[s.tipo]!, analise: selected.id }).toString()}#revisar`}
-                          className="mt-3 inline-flex min-h-10 items-center rounded-[10px] border border-slate-300 bg-white px-4 text-sm font-semibold text-ink hover:bg-navy-50"
+                          className="mt-3 inline-flex min-h-10 items-center rounded-[10px] border border-slate-300 bg-surface px-4 text-sm font-semibold text-ink hover:bg-navy-50"
                           data-testid="preparar-acao"
                         >
                           Preparar esta ação
