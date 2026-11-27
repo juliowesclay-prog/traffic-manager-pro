@@ -14,7 +14,7 @@ function guard() {
   if (process.env.APP_ENV === "production")
     throw new MetaError("A Meta simulada não pode ser usada em produção.");
 }
-const appUrl = () => process.env.APP_URL ?? "http://localhost:3200";
+const appUrl = () => process.env.APP_URL ?? "http://localhost:3300";
 
 export const metaSimulatedGateway: MetaGateway = {
   read: simulatedReader,

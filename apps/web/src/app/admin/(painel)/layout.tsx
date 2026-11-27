@@ -1,9 +1,11 @@
 import { KeyRound, LogOut, Menu } from "lucide-react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { can, ROLE_LABELS } from "@tmp/core";
 import { AdminNavLinks, type NavGroup } from "@/components/admin/admin-nav";
 import { BrandMark } from "@/components/admin/brand-mark";
+import { ThemeToggle } from "@/components/admin/theme-toggle";
 import { ADMIN_NAV_GROUPS } from "@/components/admin/nav-items";
 import { logoutAction } from "@/lib/actions";
 import { getSiteSettings } from "@/lib/settings";
@@ -26,6 +28,8 @@ const initials = (name: string) =>
 export default async function PanelLayout({ children }: { children: ReactNode }) {
   const { user, roles } = await requireStaff("admin:access", { allowPasswordChange: true });
   const settings = await getSiteSettings();
+  const tema = (await cookies()).get("tema")?.value;
+  const themeChoice = tema === "light" || tema === "dark" ? tema : "system";
   const [companies, active] = await Promise.all([companiesOf(user), activeCompany()]);
   const switcher = user.mustChangePassword ? null : (
     <CompanySwitcher
@@ -56,6 +60,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
           {roles.map((r) => ROLE_LABELS[r]).join(", ")}
         </p>
       </div>
+      <ThemeToggle initial={themeChoice} />
       <Link
         href="/admin/conta"
         className="flex min-h-10 items-center gap-3 rounded-[9px] px-3 text-sm font-medium text-side-ink hover:bg-side-2 hover:text-white"
@@ -84,7 +89,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
 
   return (
     <div className="min-h-dvh bg-canvas lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:bg-[linear-gradient(to_right,var(--color-side)_16.5rem,var(--color-canvas)_16.5rem)]">
-      <aside className="hidden bg-side px-3.5 py-5 lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:gap-6 lg:overflow-y-auto">
+      <aside className="hidden border-r border-white/5 bg-side px-3.5 py-5 lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:gap-6 lg:overflow-y-auto">
         <div className="px-1.5">{home}</div>
         {switcher}
         <nav aria-label="Painel" className="flex-1">

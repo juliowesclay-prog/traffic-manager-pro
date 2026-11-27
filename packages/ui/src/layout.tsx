@@ -25,7 +25,7 @@ export function Section({
   className?: string;
   tone?: "plain" | "white" | "navy";
 }) {
-  const bg = { plain: "", white: "bg-white", navy: "bg-navy text-white" }[tone];
+  const bg = { plain: "", white: "bg-surface", navy: "bg-navy text-canvas" }[tone];
   return (
     <section id={id} aria-labelledby={`${id}-titulo`} className={cn("py-14 sm:py-20", bg, className)}>
       <Container>

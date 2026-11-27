@@ -132,7 +132,7 @@ export function SyncIntervalForm({
             id="intervalo-sync"
             name="intervalo"
             defaultValue={current}
-            className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-ink"
+            className="min-h-11 rounded-lg border border-slate-300 bg-surface px-3 text-sm text-ink"
           >
             {options.map((o) => (
               <option key={o.value} value={o.value}>
@@ -173,7 +173,7 @@ export function AnalyzeForm({
             id="periodo-ia"
             name="periodo"
             defaultValue={defaultPeriod}
-            className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-ink"
+            className="min-h-11 rounded-lg border border-slate-300 bg-surface px-3 text-sm text-ink"
           >
             {periods.map((p) => (
               <option key={p} value={p}>

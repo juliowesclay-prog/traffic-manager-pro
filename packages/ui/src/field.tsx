@@ -38,7 +38,7 @@ export function Field({
         aria-invalid={error ? true : undefined}
         aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
         className={cn(
-          "min-h-11 w-full min-w-0 rounded-lg border bg-white px-3 text-base text-ink",
+          "min-h-11 w-full min-w-0 rounded-lg border bg-surface px-3 text-base text-ink",
           error ? "border-red" : "border-slate-300 focus:border-accent",
         )}
         {...props}

@@ -42,7 +42,7 @@ export function SelectField({
         aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
         className={cn(
           // w-full + min-w-0: opções com texto longo não alargam a tela no celular.
-          "min-h-11 w-full min-w-0 max-w-full truncate rounded-lg border bg-white px-3 text-base text-ink disabled:bg-slate-100",
+          "min-h-11 w-full min-w-0 max-w-full truncate rounded-lg border bg-surface px-3 text-base text-ink disabled:bg-slate-100",
           error ? "border-red" : "border-slate-300 focus:border-accent",
         )}
         {...props}
@@ -123,7 +123,7 @@ export function TextAreaField({
         aria-invalid={error ? true : undefined}
         aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
         className={cn(
-          "rounded-lg border bg-white p-3 text-base text-ink",
+          "rounded-lg border bg-surface p-3 text-base text-ink",
           error ? "border-red" : "border-slate-300 focus:border-accent",
         )}
         {...props}

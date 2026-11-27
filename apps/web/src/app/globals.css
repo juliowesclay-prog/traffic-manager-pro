@@ -28,6 +28,8 @@
   --color-ink-faint: #6b768c;
   --color-line: #e2e6ee;
   --color-canvas: #f3f5f9;
+  --color-surface: #ffffff;
+  --color-accent-text: #2447d6;
   --color-side: #0e1422;
   --color-side-2: #182033;
   --color-side-ink: #c9d1e3;
@@ -38,6 +40,77 @@
   --font-display: var(--font-sora), "Sora", var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
   --shadow-card: 0 1px 2px rgb(18 24 38 / 0.05), 0 2px 8px rgb(18 24 38 / 0.04);
+}
+
+/*
+ * Modo escuro. Padrão: segue o sistema (prefers-color-scheme). O botão "Tema" do menu grava a
+ * escolha num cookie e o layout põe data-theme="light" | "dark" no <html>, que vence o sistema.
+ * Só as variáveis mudam; as telas usam as mesmas classes nos dois temas.
+ * O vermelho, o verde e o cobalto de fundo ficam iguais (texto branco por cima continua AA);
+ * mudam as versões usadas como TEXTO (red-dark, saving-dark, accent-text) e os fundos claros (-50).
+ */
+:root {
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-navy: #e8ecf5;
+    --color-navy-soft: #c9d1e3;
+    --color-navy-50: #1b2335;
+    --color-accent-dark: #2447d6;
+    --color-accent-50: #1d2747;
+    --color-accent-text: #9cb0ff;
+    --color-red-dark: #ff8a91;
+    --color-red-50: #3a171b;
+    --color-saving-dark: #5fd3a3;
+    --color-saving-50: #10301f;
+    --color-ink: #e8ecf5;
+    --color-ink-soft: #aab3c7;
+    --color-ink-faint: #8a94aa;
+    --color-line: #263048;
+    --color-canvas: #0b101b;
+    --color-surface: #131a29;
+    --color-side: #080c15;
+    --color-side-2: #141b2b;
+    --color-amber-50: #33260c;
+    --color-amber-100: #46340f;
+    --color-amber-500: #d99a2b;
+    --color-amber-900: #f6cc7e;
+    --color-amber-950: #fbe0a8;
+    --color-slate-100: #1b2335;
+    --color-slate-300: #3a4560;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-navy: #e8ecf5;
+  --color-navy-soft: #c9d1e3;
+  --color-navy-50: #1b2335;
+  --color-accent-dark: #2447d6;
+  --color-accent-50: #1d2747;
+  --color-accent-text: #9cb0ff;
+  --color-red-dark: #ff8a91;
+  --color-red-50: #3a171b;
+  --color-saving-dark: #5fd3a3;
+  --color-saving-50: #10301f;
+  --color-ink: #e8ecf5;
+  --color-ink-soft: #aab3c7;
+  --color-ink-faint: #8a94aa;
+  --color-line: #263048;
+  --color-canvas: #0b101b;
+  --color-surface: #131a29;
+  --color-side: #080c15;
+  --color-side-2: #141b2b;
+  --color-amber-50: #33260c;
+  --color-amber-100: #46340f;
+  --color-amber-500: #d99a2b;
+  --color-amber-900: #f6cc7e;
+  --color-amber-950: #fbe0a8;
+  --color-slate-100: #1b2335;
+  --color-slate-300: #3a4560;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35);
 }
 
 /* Base 16px (ferramenta de trabalho, telas densas). Unidades em rem respeitam o zoom do usuário. */
