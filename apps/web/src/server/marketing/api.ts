@@ -3,7 +3,7 @@ import type { Permission } from "@tmp/core";
 import { apiGuard, isSameOrigin, type AuthContext } from "../auth";
 import { activeCompany } from "../company";
 
-/** Guarda das rotas do Marketing: login + MFA + permissão + empresa aberta (+ mesma origem ao alterar). */
+/** Guarda das rotas do Marketing: login + permissão + empresa aberta (+ mesma origem ao alterar). */
 export async function marketingGuard(
   request: Request,
   permission: Permission,

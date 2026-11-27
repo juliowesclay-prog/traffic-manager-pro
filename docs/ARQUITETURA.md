@@ -18,7 +18,7 @@ infra/            Postgres de desenvolvimento (docker compose)
 
 ## Login e perfis
 
-- Equipe entra com e-mail + senha (Argon2id) **e** código do aplicativo autenticador (TOTP), sempre.
+- Equipe entra com e-mail + senha (Argon2id). A verificação em duas etapas (autenticador) foi retirada a pedido em 27/11/2026.
 - Sessão no servidor (cookie com token aleatório; no banco só o hash), 12 h no máximo e 30 min sem uso.
 - Perfis (`packages/core/src/rbac.ts`):
 

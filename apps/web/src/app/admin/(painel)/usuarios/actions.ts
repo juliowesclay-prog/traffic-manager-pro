@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import {
   createStaff,
-  resetMfa,
   resetPassword,
   setBlocked,
   updateRoles,
@@ -36,11 +35,9 @@ export async function manageStaffAction(_: AdminResult | undefined, form: FormDa
         ? await setBlocked(user.id, id, true)
         : op === "unblock"
           ? await setBlocked(user.id, id, false)
-          : op === "reset-mfa"
-            ? await resetMfa(user.id, id)
-            : op === "reset-password"
-              ? await resetPassword(user.id, id)
-              : ({ ok: false, message: "Ação desconhecida." } as const);
+          : op === "reset-password"
+            ? await resetPassword(user.id, id)
+            : ({ ok: false, message: "Ação desconhecida." } as const);
   revalidatePath(`/admin/usuarios/${id}`);
   return result;
 }

@@ -32,11 +32,11 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
       </LinkButton>
       <AdminPageTitle
         title={u.name}
-        subtitle={`${u.email} · ${u.status === "BLOCKED" ? "Bloqueado" : "Ativo"} · autenticador ${u.mfaEnabledAt ? "configurado" : "pendente"}`}
+        subtitle={`${u.email} · ${u.status === "BLOCKED" ? "Bloqueado" : "Ativo"}`}
       />
       {self ? (
         <p className="mb-6 rounded-2xl bg-navy-50 p-4 text-navy">
-          Esta é a sua conta. Por segurança, perfis, bloqueio e autenticador só podem ser alterados por outro
+          Esta é a sua conta. Por segurança, perfis e bloqueio só podem ser alterados por outro
           superadministrador.
         </p>
       ) : null}
@@ -56,7 +56,6 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
             <h2 className="font-display text-base font-semibold text-ink">Acesso</h2>
             <div className="mt-4 grid gap-6">
               <ManageStaffForm userId={u.id} op="reset-password" label="Gerar senha provisória" />
-              <ManageStaffForm userId={u.id} op="reset-mfa" label="Reiniciar autenticador" />
               {u.status === "BLOCKED" ? (
                 <ManageStaffForm userId={u.id} op="unblock" label="Desbloquear usuário" variant="primary" />
               ) : (

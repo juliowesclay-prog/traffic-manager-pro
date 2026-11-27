@@ -1,5 +1,6 @@
 /** Nomes amigáveis das ações registradas na auditoria. */
 export const AUDIT_LABELS: Record<string, string> = {
+  "staff.login_ok": "Equipe entrou no painel",
   "staff.password_ok": "Equipe: senha confirmada",
   "staff.mfa_ok": "Equipe entrou no painel",
   "staff.mfa_enrolled": "Equipe configurou o autenticador",

@@ -28,7 +28,7 @@ export async function listStaff() {
   });
 }
 
-/** Superadmins ativos com MFA, exceto o informado — nunca deixar o sistema sem administrador. */
+/** Superadmins ativos, exceto o informado — nunca deixar o sistema sem administrador. */
 async function otherActiveSuperadmins(excludeUserId: string) {
   return prisma.user.count({
     where: { id: { not: excludeUserId }, status: "ACTIVE", roles: { some: { role: "SUPERADMIN" } } },
@@ -139,21 +139,6 @@ export async function setBlocked(actorId: string, userId: string, blocked: boole
     entityId: userId,
   });
   return { ok: true, message: blocked ? "Usuário bloqueado e desconectado." : "Usuário desbloqueado." };
-}
-
-/** Para quem perdeu o celular do autenticador: no próximo acesso configura de novo. */
-export async function resetMfa(actorId: string, userId: string): Promise<AdminResult> {
-  if (actorId === userId)
-    return { ok: false, message: "Peça a outro superadministrador para reiniciar o seu autenticador." };
-  await prisma.$transaction([
-    prisma.user.update({
-      where: { id: userId },
-      data: { mfaSecretEnc: null, mfaEnabledAt: null, mfaLastStep: null },
-    }),
-    prisma.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
-  ]);
-  await audit({ actorId, action: "staff.mfa_reset", entity: "User", entityId: userId });
-  return { ok: true, message: "Autenticador reiniciado. No próximo acesso a pessoa vai configurar de novo." };
 }
 
 export async function resetPassword(actorId: string, userId: string): Promise<AdminResult> {

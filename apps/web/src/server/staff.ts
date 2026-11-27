@@ -1,7 +1,6 @@
 import "server-only";
-import QRCode from "qrcode";
-import { can, generateTotpSecret, totpUri, verifyTotp } from "@tmp/core";
-import { decrypt, encrypt, prisma } from "@tmp/db";
+import { can } from "@tmp/core";
+import { prisma } from "@tmp/db";
 import { audit } from "./audit";
 import { isLocked, registerFailedLogin, registerSuccessfulLogin, verifyPasswordSafely } from "./passwords";
 import { rateLimit } from "./rate-limit";
@@ -18,7 +17,7 @@ const AREA_PERMISSION = { admin: "admin:access" } as const;
 const GENERIC = "E-mail ou senha incorretos.";
 const TOO_MANY = "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
 
-/** 1º fator da equipe: e-mail + senha. Abre sessão ainda SEM acesso ao painel (falta o MFA). */
+/** Login da equipe: e-mail + senha. Abre a sessão do painel. */
 export async function staffPasswordLogin(
   emailInput: string,
   password: string,
@@ -55,66 +54,11 @@ export async function staffPasswordLogin(
     return { ok: false, message: GENERIC };
   }
   await registerSuccessfulLogin(user.id);
-  await createSession(user.id, { kind: "staff", mfaVerified: false });
-  await audit({ actorId: user.id, action: "staff.password_ok", entity: "User", entityId: user.id });
-  const base = PORTAL_BASE[area];
-  return { ok: true, next: user.mfaEnabledAt ? `${base}/verificar` : `${base}/mfa/configurar` };
-}
-
-/** Prepara (ou retoma) o cadastro do aplicativo autenticador. */
-export async function mfaEnrollmentData(): Promise<{ secret: string; qrDataUrl: string } | null> {
-  const session = await currentSession();
-  if (!session || session.user.mfaEnabledAt) return null;
-  let secret: string;
-  if (session.user.mfaSecretEnc) secret = decrypt(session.user.mfaSecretEnc);
-  else {
-    secret = generateTotpSecret();
-    await prisma.user.update({ where: { id: session.userId }, data: { mfaSecretEnc: encrypt(secret) } });
-  }
-  const uri = totpUri(secret, session.user.email ?? session.user.name, "Traffic Manager Pro");
-  return { secret, qrDataUrl: await QRCode.toDataURL(uri, { margin: 1, width: 240 }) };
-}
-
-/** Confere o código do autenticador (cadastro ou login). Em caso de sucesso, troca a sessão por uma com MFA. */
-export async function confirmTotp(code: string, mode: "enroll" | "verify"): Promise<ActionResult> {
-  const session = await currentSession();
-  const user = session?.user;
-  const secretEnc = user?.mfaSecretEnc;
-  if (!user || !secretEnc) return { ok: false, message: "Sua sessão expirou. Entre de novo." };
-  if (mode === "enroll" && user.mfaEnabledAt)
-    return { ok: false, message: "O autenticador já está configurado." };
-  if (mode === "verify" && !user.mfaEnabledAt)
-    return { ok: false, message: "Configure o autenticador primeiro." };
-  if (!(await rateLimit(`mfa:user:${user.id}`, 5, 5 * 60))) return { ok: false, message: TOO_MANY };
-
-  const step = verifyTotp(decrypt(secretEnc), code.replace(/\s/g, ""), Date.now(), user.mfaLastStep);
-  if (step === null) {
-    await audit({ actorId: user.id, action: "staff.mfa_failed", entity: "User", entityId: user.id });
-    return {
-      ok: false,
-      message: "Código incorreto ou vencido. Digite o código que aparece agora no aplicativo.",
-    };
-  }
-  // Grava o passo usado só se for mais novo (impede reutilizar o mesmo código, inclusive em paralelo).
-  const updated = await prisma.user.updateMany({
-    where: { id: user.id, OR: [{ mfaLastStep: null }, { mfaLastStep: { lt: step } }] },
-    data: { mfaLastStep: step, ...(mode === "enroll" ? { mfaEnabledAt: new Date() } : {}) },
-  });
-  if (updated.count !== 1) return { ok: false, message: "Este código já foi usado. Aguarde o próximo." };
-
-  // Nova sessão com MFA (evita fixação de sessão) e encerra a anterior.
+  // Uma sessão anterior neste navegador é encerrada (evita fixação de sessão).
   await destroySession();
   await createSession(user.id, { kind: "staff", mfaVerified: true });
-  await audit({
-    actorId: user.id,
-    action: mode === "enroll" ? "staff.mfa_enrolled" : "staff.mfa_ok",
-    entity: "User",
-    entityId: user.id,
-  });
-  return {
-    ok: true,
-    next: "/admin",
-  };
+  await audit({ actorId: user.id, action: "staff.login_ok", entity: "User", entityId: user.id });
+  return { ok: true, next: PORTAL_BASE[area] };
 }
 
 export async function logout(): Promise<void> {
