@@ -30,6 +30,6 @@ export function metaByName(name: string): MetaGateway {
 
 /** Endereço de retorno da autorização (cadastrar igual no app da Meta: "URIs de redirecionamento do OAuth válidos"). */
 export const metaRedirectUri = () =>
-  `${process.env.APP_URL ?? "http://localhost:3200"}/api/v1/admin/trafego/meta/retorno`;
+  `${process.env.APP_URL ?? "http://localhost:3300"}/api/v1/admin/trafego/meta/retorno`;
 
 export { MetaError };

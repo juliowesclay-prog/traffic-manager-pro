@@ -38,10 +38,13 @@ const STAFF: { email: string; name: string; role: Role; companies: string[] }[] 
   { email: "semempresa@trafficmanager.test", name: "DEMO Sem empresa", role: "MARKETING", companies: [] },
 ];
 
+/** --so-empresas: só as empresas DEMO, sem usuários (prévia na internet: entra só o superadmin real). */
+const ONLY_COMPANIES = process.argv.includes("--so-empresas");
+
 async function main() {
   const password = process.env.DEMO_USER_PASSWORD;
   const mfaSecret = process.env.DEMO_MFA_SECRET;
-  if (!password || password.length < 12 || !mfaSecret) {
+  if (!ONLY_COMPANIES && (!password || password.length < 12 || !mfaSecret)) {
     throw new Error("Defina DEMO_USER_PASSWORD (12+ caracteres) e DEMO_MFA_SECRET no .env (pnpm env:init)");
   }
   const companyIds = new Map<string, string>();
@@ -52,6 +55,10 @@ async function main() {
       create: { ...c, isDemo: true },
     });
     companyIds.set(c.slug, row.id);
+  }
+  if (ONLY_COMPANIES || !password || !mfaSecret) {
+    console.warn(`Seed demo: ${COMPANIES.length} empresas DEMO (sem usuários de demonstração).`);
+    return;
   }
   const passwordHash = await hash(password);
   for (const s of STAFF) {

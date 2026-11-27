@@ -92,9 +92,6 @@ importers:
       next:
         specifier: ^15.1.6
         version: 15.5.29(@opentelemetry/api@1.10.0)(@playwright/test@1.56.1)(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      nodemailer:
-        specifier: ^10.5.0
-        version: 10.5.0
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -117,9 +114,6 @@ importers:
       '@types/node':
         specifier: ^22.10.7
         version: 22.20.5
-      '@types/nodemailer':
-        specifier: ^8.0.2
-        version: 8.0.2
       '@types/qrcode':
         specifier: ^1.5.6
         version: 1.5.6
@@ -1034,9 +1028,6 @@ packages:
   '@types/node@22.20.5':
     resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
 
-  '@types/nodemailer@8.0.2':
-    resolution: {integrity: sha512-c7M5ox8p0nEOfbJ2E9Qcmt8/QCu/VzsiAhzBiZbvky2PhKZDHpKB3sQHBM5MEZNkCfBOaS6S9//AGPRTNB7IaA==}
-
   '@types/pngjs@6.0.5':
     resolution: {integrity: sha512-0k5eKfrA83JOZPppLtS2C7OUtyNAl2wKNxfyYl9Q5g9lPkgBl/9hNyAu6HuEH2J4XmIv2znEpkDd0SaZVxW6iQ==}
 
@@ -1664,10 +1655,6 @@ packages:
 
   node-fetch-native@1.6.7:
     resolution: {integrity: sha512-g9yhqoedzIUm0nTnTqAQvueMPVOuIY16bqgAJJC8XOOubYFNwz6IER9qs0Gq2Xd0+CecCKFjtdDTMA4u4xG06Q==}
-
-  nodemailer@10.5.0:
-    resolution: {integrity: sha512-L/w/HH5MqpzMDuZD7fQdt/+KqymuvrpaApaIjAH2XA3ILePwlcvXCVVvP75xVrXCEt2ggK2marrrHHFB5Qu0kA==}
-    engines: {node: '>=20.0.0'}
 
   nypm@0.6.12:
     resolution: {integrity: sha512-4AhWntz+ds/P5kz1rN25yGegTPYsO5ffOy+8S0TeuXKZrgjlmgcEBLA1xubzcP/dWX4zYfNybv4TQERlL9Z0LQ==}
@@ -2692,10 +2679,6 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
-  '@types/nodemailer@8.0.2':
-    dependencies:
-      '@types/node': 22.20.5
-
   '@types/pngjs@6.0.5':
     dependencies:
       '@types/node': 22.20.5
@@ -3330,8 +3313,6 @@ snapshots:
       - babel-plugin-macros
 
   node-fetch-native@1.6.7: {}
-
-  nodemailer@10.5.0: {}
 
   nypm@0.6.12:
     dependencies:
