@@ -25,7 +25,6 @@ import {
   previewAction,
   selectedAccount,
 } from "@/server/traffic/meta-actions";
-import { TrafficTabs } from "../tabs";
 import { ActionSettingsForm, CancelForm, ConfirmActionForm, DecideForm } from "./forms";
 
 export const metadata: Metadata = { title: "Ações nos anúncios" };
@@ -34,7 +33,7 @@ const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Pau
 const money = (c: number | null) => (c == null ? "—" : formatBRL(c));
 const STATUS: Record<string, string> = { ACTIVE: "ativo", PAUSED: "pausado" };
 const st = (s: string) => STATUS[s] ?? s.toLowerCase();
-const selectCls = "min-h-14 w-full rounded-xl border-2 border-slate-400 bg-white px-4 text-lg text-ink";
+const selectCls = "min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-ink";
 
 export default async function TrafficActionsPage({
   searchParams,
@@ -54,9 +53,8 @@ export default async function TrafficActionsPage({
           title="Ações nos anúncios"
           subtitle="Pausar, reativar e mudar orçamento, com aprovação"
         />
-        <TrafficTabs />
         <Card>
-          <p className="text-lg">
+          <p className="text-base">
             Conecte a Meta e escolha a conta de anúncios primeiro.{" "}
             <Link href="/admin/trafego" className="font-bold text-navy underline">
               Ir para Conexão
@@ -89,12 +87,11 @@ export default async function TrafficActionsPage({
         title="Ações nos anúncios"
         subtitle="Pausar, reativar e mudar orçamento, com aprovação"
       />
-      <TrafficTabs />
 
       {account.isDemo ? (
         <p
           role="note"
-          className="mb-6 rounded-2xl border-2 border-amber-500 bg-amber-50 p-4 font-bold text-amber-950"
+          className="mb-6 rounded-xl border border-amber-400/70 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900"
         >
           DEMO — Meta simulada. As ações mudam só os dados de teste.
         </p>
@@ -105,7 +102,7 @@ export default async function TrafficActionsPage({
           id="resultado"
           role={outcome.ok ? "status" : "alert"}
           className={cn(
-            "mb-6 rounded-2xl p-4 text-lg font-bold",
+            "mb-6 rounded-2xl p-4 text-base font-bold",
             outcome.ok ? "bg-saving-50 text-saving-dark" : "bg-red-50 text-red-dark",
           )}
         >
@@ -131,7 +128,7 @@ export default async function TrafficActionsPage({
       </Card>
 
       <Card className="mt-6" data-testid="regras">
-        <h2 className="text-xl font-bold text-navy">Teto e regras</h2>
+        <h2 className="font-display text-base font-semibold text-ink">Teto e regras</h2>
         <dl className="mt-3 grid gap-x-6 gap-y-2 text-base sm:grid-cols-2">
           <div>
             <dt className="text-sm text-ink-soft">Ações na Meta</dt>
@@ -169,7 +166,7 @@ export default async function TrafficActionsPage({
         ) : null}
         {canApprove ? (
           <details className="mt-3">
-            <summary className="min-h-12 cursor-pointer py-3 font-bold text-navy">
+            <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-ink">
               Alterar teto e regras
             </summary>
             <ActionSettingsForm
@@ -187,13 +184,13 @@ export default async function TrafficActionsPage({
 
       {canManage ? (
         <Card className="mt-6">
-          <h2 className="text-xl font-bold text-navy" id="nova-acao">
+          <h2 className="font-display text-base font-semibold text-ink" id="nova-acao">
             Nova ação
           </h2>
           <form method="get" action="/admin/trafego/acoes#revisar" className="mt-3 grid gap-4 lg:grid-cols-3">
             <input type="hidden" name="analise" value={analise} />
             <div className="grid gap-2 lg:col-span-3">
-              <label htmlFor="alvo" className="text-lg font-bold text-navy">
+              <label htmlFor="alvo" className="text-base font-semibold text-ink">
                 Item
               </label>
               <select id="alvo" name="alvo" defaultValue={alvo} required className={selectCls}>
@@ -219,7 +216,7 @@ export default async function TrafficActionsPage({
               </select>
             </div>
             <div className="grid gap-2">
-              <label htmlFor="tipo" className="text-lg font-bold text-navy">
+              <label htmlFor="tipo" className="text-base font-semibold text-ink">
                 Ação
               </label>
               <select id="tipo" name="tipo" defaultValue={tipo} required className={selectCls}>
@@ -232,7 +229,7 @@ export default async function TrafficActionsPage({
               </select>
             </div>
             <div className="grid gap-2">
-              <label htmlFor="valor" className="text-lg font-bold text-navy">
+              <label htmlFor="valor" className="text-base font-semibold text-ink">
                 Novo orçamento diário (R$)
               </label>
               <p id="valor-dica" className="text-base text-ink-soft">
@@ -251,7 +248,7 @@ export default async function TrafficActionsPage({
             <div className="flex items-end">
               <button
                 type="submit"
-                className="inline-flex min-h-14 items-center rounded-xl border-2 border-navy px-6 text-lg font-bold text-navy"
+                className="inline-flex min-h-11 items-center rounded-[10px] border border-slate-300 bg-white px-4 text-sm font-semibold text-ink hover:bg-navy-50"
               >
                 Revisar
               </button>
@@ -265,7 +262,7 @@ export default async function TrafficActionsPage({
               className="mt-6 border-t-2 border-line pt-4"
               data-testid="previa"
             >
-              <h3 id="revisar-titulo" className="text-lg font-bold text-navy">
+              <h3 id="revisar-titulo" className="text-base font-semibold text-ink">
                 Revisão
               </h3>
               {!preview.result.ok ? (
@@ -301,7 +298,7 @@ export default async function TrafficActionsPage({
                   </dl>
                   {preview.result.plan.increasesSpend ? (
                     <p
-                      className="mt-3 flex items-start gap-2 rounded-2xl border-2 border-amber-500 bg-amber-50 p-3 font-bold text-amber-950"
+                      className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500 bg-amber-50 p-3 font-bold text-amber-950"
                       data-testid="precisa-aprovacao"
                     >
                       <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
@@ -327,7 +324,9 @@ export default async function TrafficActionsPage({
       ) : null}
 
       <Card className="mt-6" data-testid="pendentes">
-        <h2 className="text-xl font-bold text-navy">Aguardando aprovação ({lists.pending.length})</h2>
+        <h2 className="font-display text-base font-semibold text-ink">
+          Aguardando aprovação ({lists.pending.length})
+        </h2>
         {lists.pending.length ? (
           <ul className="mt-3 grid gap-4">
             {lists.pending.map((a) => {
@@ -335,10 +334,10 @@ export default async function TrafficActionsPage({
               return (
                 <li
                   key={a.id}
-                  className="rounded-2xl border-2 border-amber-500 p-4"
+                  className="rounded-xl border border-amber-500 p-4"
                   data-testid={`pedido-${a.id}`}
                 >
-                  <p className="text-lg font-bold break-words text-navy">
+                  <p className="text-base font-bold break-words text-navy">
                     {describeTrafficAction(a)} — {a.objectName}
                   </p>
                   <p className="text-sm text-ink-soft">
@@ -375,7 +374,7 @@ export default async function TrafficActionsPage({
       </Card>
 
       <Card className="mt-6" data-testid="historico-acoes">
-        <h2 className="text-xl font-bold text-navy">Histórico</h2>
+        <h2 className="font-display text-base font-semibold text-ink">Histórico</h2>
         {lists.history.length ? (
           <ul className="mt-3 grid gap-3">
             {lists.history.map((a) => (

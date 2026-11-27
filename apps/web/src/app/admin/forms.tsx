@@ -23,7 +23,7 @@ export function StaffLoginForm({
         <p
           role="status"
           data-testid="login-de-teste"
-          className="rounded-2xl border-2 border-dashed border-amber-500 bg-amber-50 p-4 text-amber-950"
+          className="rounded-xl border border-dashed border-amber-500 bg-amber-50 p-4 text-amber-950"
         >
           <strong>Ambiente de teste:</strong> o e-mail e a senha do administrador de demonstração já estão
           preenchidos. É só clicar em Continuar. Para outro perfil, troque o e-mail.
@@ -68,7 +68,7 @@ export function TotpForm({ mode, testCode }: { mode: "enroll" | "verify"; testCo
       {testCode ? (
         <p
           role="status"
-          className="rounded-2xl border-2 border-dashed border-amber-500 bg-amber-50 p-4 text-amber-950"
+          className="rounded-xl border border-dashed border-amber-500 bg-amber-50 p-4 text-amber-950"
         >
           <strong>Ambiente de teste:</strong> o código do usuário de demonstração já está preenchido. É só
           clicar no botão. Se aparecer &quot;código inválido&quot;, recarregue a página.

@@ -8,7 +8,6 @@ import { AdminPageTitle } from "@/components/admin/page-title";
 import { META_URL_PARAMS } from "@/lib/attribution";
 import { requireCompanyStaff } from "@/server/auth";
 import { cac, roas, salesByAd, type SalesRow } from "@/server/traffic/sales";
-import { TrafficTabs } from "../tabs";
 
 export const metadata: Metadata = { title: "Vendas por anúncio" };
 
@@ -59,11 +58,10 @@ export default async function SalesByAdPage({
         title="Vendas por anúncio"
         subtitle="Quanto cada campanha custou e quantas vendas pagas trouxe de verdade"
       />
-      <TrafficTabs />
 
       {!r.account ? (
         <Card>
-          <p className="text-lg">
+          <p className="text-base">
             Conecte a Meta e escolha a conta de anúncios para ver as vendas por anúncio.{" "}
             <Link href="/admin/trafego" className="font-bold text-navy underline">
               Ir para Conexão
@@ -75,7 +73,7 @@ export default async function SalesByAdPage({
           {r.account.isDemo ? (
             <p
               role="note"
-              className="mb-6 rounded-2xl border-2 border-amber-500 bg-amber-50 p-4 font-bold text-amber-950"
+              className="mb-6 rounded-xl border border-amber-400/70 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900"
             >
               DEMO — investimento simulado e cadastros de teste. Não use para decisões.
             </p>
@@ -90,7 +88,7 @@ export default async function SalesByAdPage({
                 id="periodo"
                 name="periodo"
                 defaultValue={days}
-                className="min-h-12 rounded-xl border-2 border-line bg-white px-3 text-base"
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
               >
                 {REPORT_PERIODS.map((d) => (
                   <option key={d} value={d}>
@@ -101,17 +99,17 @@ export default async function SalesByAdPage({
             </div>
             <button
               type="submit"
-              className="inline-flex min-h-12 items-center rounded-xl border-2 border-navy px-5 font-bold text-navy"
+              className="inline-flex min-h-11 items-center rounded-[10px] border border-slate-300 bg-white px-4 text-sm font-semibold text-ink hover:bg-navy-50"
             >
               Ver
             </button>
           </form>
           <p className="mt-2 text-sm text-ink-soft">
-            {br(r.since)} a {br(r.until)}. Vendas = primeira compra paga no período (fonte de vendas). Receita =
-            compras pagas no período, menos estornos.
+            {br(r.since)} a {br(r.until)}. Vendas = primeira compra paga no período (fonte de vendas). Receita
+            = compras pagas no período, menos estornos.
           </p>
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard
               testId="vendas-investido"
               raw={r.totals.spend}
@@ -153,7 +151,7 @@ export default async function SalesByAdPage({
           ) : null}
 
           <Card className="mt-6" data-testid="vendas-por-campanha">
-            <h2 className="text-xl font-bold text-navy">Por campanha</h2>
+            <h2 className="font-display text-base font-semibold text-ink">Por campanha</h2>
             <div
               className="mt-3 overflow-x-auto"
               tabIndex={0}
@@ -204,7 +202,7 @@ export default async function SalesByAdPage({
           </Card>
 
           <Card className="mt-6">
-            <h2 className="text-xl font-bold text-navy">Como identificar cada anúncio</h2>
+            <h2 className="font-display text-base font-semibold text-ink">Como identificar cada anúncio</h2>
             <p className="mt-1 text-base">
               No Gerenciador de Anúncios da Meta, em cada anúncio, cole no campo{" "}
               <strong>Parâmetros de URL</strong>:

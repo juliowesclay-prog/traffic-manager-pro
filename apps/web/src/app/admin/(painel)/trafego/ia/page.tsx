@@ -9,7 +9,6 @@ import { aiProviderName } from "@/server/traffic/ai";
 import { AI_PERIODS, getAnalysis, listAnalyses } from "@/server/traffic/ai/analysis";
 import { activeConnection } from "@/server/traffic/connection";
 import { AnalyzeForm } from "../forms";
-import { TrafficTabs } from "../tabs";
 
 export const metadata: Metadata = { title: "IA analista" };
 
@@ -37,7 +36,6 @@ export default async function TrafficAiPage({
   return (
     <>
       <AdminPageTitle title="IA analista" subtitle="Diagnóstico e sugestões sobre os anúncios, explicados" />
-      <TrafficTabs />
 
       <Card>
         <div className="flex items-start gap-3">
@@ -57,13 +55,13 @@ export default async function TrafficAiPage({
 
       {!provider ? (
         <Card className="mt-6">
-          <p className="text-lg">
+          <p className="text-base">
             A IA analista ainda não foi configurada. A equipe técnica precisa da chave da API do Claude.
           </p>
         </Card>
       ) : !account ? (
         <Card className="mt-6">
-          <p className="text-lg">
+          <p className="text-base">
             Conecte a Meta e escolha a conta de anúncios para pedir uma análise.{" "}
             <Link href="/admin/trafego" className="font-bold text-navy underline">
               Ir para Conexão
@@ -75,14 +73,14 @@ export default async function TrafficAiPage({
           {provider === "simulado" ? (
             <p
               role="note"
-              className="mt-6 rounded-2xl border-2 border-amber-500 bg-amber-50 p-4 font-bold text-amber-950"
+              className="mt-6 rounded-xl border border-amber-400/70 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900"
             >
               DEMO — IA simulada por regras fixas (não é o Claude). Não use para decisões.
             </p>
           ) : null}
           {canManage ? (
             <Card className="mt-6">
-              <h2 className="text-xl font-bold text-navy">Nova análise</h2>
+              <h2 className="font-display text-base font-semibold text-ink">Nova análise</h2>
               <div className="mt-3">
                 <AnalyzeForm periods={AI_PERIODS} defaultPeriod={7} />
               </div>
@@ -91,7 +89,7 @@ export default async function TrafficAiPage({
 
           {selected?.status === "ERRO" ? (
             <Card className="mt-6" data-testid="analise-erro">
-              <p role="alert" className="text-lg text-red-dark">
+              <p role="alert" className="text-base text-red-dark">
                 A análise de {when(selected.createdAt)} não foi concluída: {selected.error}
               </p>
             </Card>
@@ -101,7 +99,7 @@ export default async function TrafficAiPage({
             <section aria-labelledby="titulo-analise" className="mt-6 grid gap-6" data-testid="analise">
               <Card>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h2 id="titulo-analise" className="text-xl font-bold text-navy">
+                  <h2 id="titulo-analise" className="font-display text-base font-semibold text-ink">
                     Análise dos últimos {selected.periodDays} dias
                   </h2>
                   <p className="text-sm text-ink-soft">
@@ -110,14 +108,14 @@ export default async function TrafficAiPage({
                     {selected.isDemo ? " · DEMO" : ""}
                   </p>
                 </div>
-                <p className="mt-3 text-lg" data-testid="analise-resumo">
+                <p className="mt-3 text-base" data-testid="analise-resumo">
                   {out.resumo}
                 </p>
               </Card>
 
               {out.diagnostico.length ? (
                 <Card>
-                  <h3 className="text-xl font-bold text-navy">Diagnóstico</h3>
+                  <h3 className="font-display text-base font-semibold text-ink">Diagnóstico</h3>
                   <ol className="mt-3 grid gap-4">
                     {out.diagnostico.map((d, i) => (
                       <li key={i}>
@@ -137,21 +135,23 @@ export default async function TrafficAiPage({
               ) : null}
 
               <Card>
-                <h3 className="text-xl font-bold text-navy">Sugestões ({out.sugestoes.length})</h3>
+                <h3 className="font-display text-base font-semibold text-ink">
+                  Sugestões ({out.sugestoes.length})
+                </h3>
                 <ol className="mt-3 grid gap-3">
                   {out.sugestoes.map((s, i) => (
                     <li
                       key={i}
                       data-testid={`sugestao-${i}`}
                       className={cn(
-                        "rounded-2xl border-2 p-4",
+                        "rounded-xl border p-4",
                         s.aumenta_gasto ? "border-amber-500 bg-amber-50" : "border-line bg-white",
                       )}
                     >
                       <p className="text-sm font-bold text-ink-soft">
                         {PRIO[s.prioridade]} · {AI_SUGGESTION_LABELS[s.tipo]} · confiança {CONF[s.confianca]}
                       </p>
-                      <p className="mt-1 text-lg font-bold">{s.titulo}</p>
+                      <p className="mt-1 text-base font-bold">{s.titulo}</p>
                       {s.alvo_nome ? (
                         <p className="text-sm text-ink-soft">
                           Em: {s.alvo_nome} <span className="font-mono">({s.alvo_id})</span>
@@ -175,7 +175,7 @@ export default async function TrafficAiPage({
                       {canManage && s.alvo_id && AI_SUGGESTION_TO_ACTION[s.tipo] ? (
                         <Link
                           href={`/admin/trafego/acoes?${new URLSearchParams({ alvo: s.alvo_id, tipo: AI_SUGGESTION_TO_ACTION[s.tipo]!, analise: selected.id }).toString()}#revisar`}
-                          className="mt-3 inline-flex min-h-12 items-center rounded-xl border-2 border-navy px-4 font-bold text-navy"
+                          className="mt-3 inline-flex min-h-10 items-center rounded-[10px] border border-slate-300 bg-white px-4 text-sm font-semibold text-ink hover:bg-navy-50"
                           data-testid="preparar-acao"
                         >
                           Preparar esta ação
@@ -188,7 +188,7 @@ export default async function TrafficAiPage({
 
               {out.limitacoes.length ? (
                 <Card>
-                  <h3 className="text-xl font-bold text-navy">Limites desta análise</h3>
+                  <h3 className="font-display text-base font-semibold text-ink">Limites desta análise</h3>
                   <ul className="mt-3 list-disc pl-6 text-base">
                     {out.limitacoes.map((l, i) => (
                       <li key={i}>{l}</li>
@@ -200,7 +200,7 @@ export default async function TrafficAiPage({
               <Card>
                 {out.descartadas.length ? (
                   <details data-testid="descartadas">
-                    <summary className="min-h-12 cursor-pointer py-3 font-bold text-navy">
+                    <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-ink">
                       Sugestões descartadas pelas travas ({out.descartadas.length})
                     </summary>
                     <ul className="list-disc pl-6 text-base">
@@ -213,7 +213,7 @@ export default async function TrafficAiPage({
                   </details>
                 ) : null}
                 <details>
-                  <summary className="min-h-12 cursor-pointer py-3 font-bold text-navy">
+                  <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-ink">
                     Ver os dados enviados à IA
                   </summary>
                   <pre
@@ -230,7 +230,7 @@ export default async function TrafficAiPage({
 
           {history.length ? (
             <Card className="mt-6">
-              <h2 className="text-xl font-bold text-navy">Análises anteriores</h2>
+              <h2 className="font-display text-base font-semibold text-ink">Análises anteriores</h2>
               <ul className="mt-3 grid gap-2" data-testid="historico">
                 {history.map((h) => (
                   <li key={h.id} className="flex flex-wrap items-center gap-2 border-b border-line pb-2">

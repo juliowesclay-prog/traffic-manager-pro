@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** Indicador grande (número + rótulo + contexto), como no modelo de referência. */
+/** Indicador (rótulo + número + comparação). Usado no topo dos painéis. */
 export function KpiCard({
   icon,
   label,
@@ -22,23 +22,25 @@ export function KpiCard({
 }) {
   return (
     <div
-      className="rounded-3xl border border-line bg-white p-5 shadow-card"
+      className="flex flex-col gap-2 rounded-xl border border-line bg-white p-4 shadow-card sm:p-5"
       data-testid={testId}
       data-valor={raw ?? undefined}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <span
           aria-hidden="true"
-          className={`grid size-11 place-items-center rounded-xl ${
-            tone === "alert" ? "bg-red-50 text-red" : "bg-navy-50 text-navy"
+          className={`grid size-7 place-items-center rounded-md [&>svg]:size-4 ${
+            tone === "alert" ? "bg-red-50 text-red" : "bg-accent-50 text-accent-dark"
           }`}
         >
           {icon}
         </span>
-        <p className="text-sm font-bold text-ink-soft">{label}</p>
+        <p className="text-xs font-semibold tracking-wide text-ink-soft">{label}</p>
       </div>
-      <p className="mt-4 font-display text-4xl font-extrabold whitespace-nowrap text-navy">{value}</p>
-      {note ? <p className="mt-1 text-sm text-ink-soft">{note}</p> : null}
+      <p className="font-display text-[1.75rem] leading-tight font-semibold tracking-tight whitespace-nowrap text-ink">
+        {value}
+      </p>
+      {note ? <p className="text-xs text-ink-soft">{note}</p> : null}
     </div>
   );
 }

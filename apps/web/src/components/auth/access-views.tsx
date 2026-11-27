@@ -21,7 +21,6 @@ const TEXT: Record<Area, { badge: string; title: string; intro: string; lost: st
     intro: "Acesso exclusivo da equipe. Depois da senha, pedimos o código do aplicativo autenticador.",
     lost: "Se perder o aparelho, peça a um superadministrador para reiniciar sua verificação.",
   },
-
 };
 
 export async function AccessShell({ area, children }: { area: Area; children: ReactNode }) {
@@ -57,7 +56,7 @@ export async function LoginView({ area }: { area: Area }) {
   }
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="font-display text-3xl font-extrabold text-navy">{TEXT[area].title}</h1>
+      <h1 className="font-display text-2xl font-semibold text-ink">{TEXT[area].title}</h1>
       <p className="mt-2 text-lg text-ink-soft">{TEXT[area].intro}</p>
       <div className="mt-8">
         <StaffLoginForm area={area} testLogin={await devPrefilledAdminLogin()} />
@@ -71,7 +70,7 @@ export async function MfaVerifyView({ area }: { area: Area }) {
   if (!auth.user.mfaEnabledAt) redirect(`${BASE[area]}/mfa/configurar`);
   return (
     <div className="mx-auto grid max-w-lg gap-6">
-      <h1 className="font-display text-3xl font-extrabold text-navy">Verificação em duas etapas</h1>
+      <h1 className="font-display text-2xl font-semibold text-ink">Verificação em duas etapas</h1>
       <p className="text-lg text-ink-soft">
         Abra o aplicativo autenticador no celular e digite o código atual.
       </p>
@@ -88,7 +87,7 @@ export async function MfaEnrollView({ area }: { area: Area }) {
   return (
     <div className="mx-auto grid max-w-2xl gap-8">
       <div>
-        <h1 className="font-display text-3xl font-extrabold text-navy">Proteja sua conta</h1>
+        <h1 className="font-display text-2xl font-semibold text-ink">Proteja sua conta</h1>
         <p className="mt-2 text-lg text-ink-soft">
           Usamos verificação em duas etapas. Faça isso uma única vez:
         </p>
@@ -101,7 +100,7 @@ export async function MfaEnrollView({ area }: { area: Area }) {
         <li>No aplicativo, escolha “adicionar conta” e leia o QR Code abaixo.</li>
         <li>Digite o código de 6 números que aparecer no aplicativo.</li>
       </ol>
-      <div className="flex flex-col items-start gap-4 rounded-3xl border border-line bg-white p-6 sm:flex-row sm:items-center">
+      <div className="flex flex-col items-start gap-4 rounded-xl border border-line bg-white p-6 sm:flex-row sm:items-center">
         <img
           src={data.qrDataUrl}
           alt="QR Code para adicionar a conta no aplicativo autenticador"

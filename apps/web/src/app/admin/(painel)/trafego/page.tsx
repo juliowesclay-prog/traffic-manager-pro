@@ -12,7 +12,6 @@ import { Card, cn } from "@tmp/ui";
 import { AdminPageTitle } from "@/components/admin/page-title";
 import { requireCompanyStaff } from "@/server/auth";
 import { trafficOverview } from "@/server/traffic/connection";
-import { TrafficTabs } from "./tabs";
 import { ConnectMetaButton, DisconnectMetaForm, RefreshAccountsButton, SelectAccountButton } from "./forms";
 
 export const metadata: Metadata = { title: "Gestor de Tráfego IA" };
@@ -65,14 +64,12 @@ export default async function TrafficPage({
         subtitle="Anúncios do Facebook e do Instagram ligados às vendas reais da empresa"
       />
 
-      <TrafficTabs />
-
       {result ? (
         <p
           role="status"
           data-testid="resultado-conexao"
           className={cn(
-            "mb-6 rounded-2xl border-2 p-4 text-lg font-bold",
+            "mb-6 rounded-xl border p-4 text-base font-bold",
             result.ok
               ? "border-saving/40 bg-saving-50 text-saving-dark"
               : "border-red/40 bg-red-50 text-red-dark",
@@ -85,7 +82,7 @@ export default async function TrafficPage({
       {o.provider === "simulado" ? (
         <p
           role="note"
-          className="mb-6 rounded-2xl border-2 border-amber-500 bg-amber-50 p-4 font-bold text-amber-950"
+          className="mb-6 rounded-xl border border-amber-400/70 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900"
         >
           DEMO — integração SIMULADA (ambiente de testes). As contas e números são de demonstração; nada fala
           com a Meta de verdade.
@@ -94,7 +91,7 @@ export default async function TrafficPage({
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card data-testid="conexao-meta">
-          <h2 className="text-xl font-bold text-navy">Conexão com a Meta</h2>
+          <h2 className="font-display text-base font-semibold text-ink">Conexão com a Meta</h2>
           {!o.provider ? (
             <div className="mt-3 grid gap-2 text-base">
               <p>A integração ainda não foi configurada neste servidor.</p>
@@ -165,9 +162,9 @@ export default async function TrafficPage({
                 </p>
               ) : null}
               <p>
-                Ainda não conectado. Ao conectar, você entra na sua conta da Meta e autoriza o Traffic Manager Pro a{" "}
-                <strong>ler</strong> e <strong>gerenciar</strong> os anúncios. Nenhuma alteração que aumente
-                gastos é feita sem aprovação aqui no painel.
+                Ainda não conectado. Ao conectar, você entra na sua conta da Meta e autoriza o Traffic Manager
+                Pro a <strong>ler</strong> e <strong>gerenciar</strong> os anúncios. Nenhuma alteração que
+                aumente gastos é feita sem aprovação aqui no painel.
               </p>
               {canManage ? (
                 <ConnectMetaButton label="Conectar com a Meta" />
@@ -181,7 +178,7 @@ export default async function TrafficPage({
         </Card>
 
         <Card data-testid="contas-anuncio">
-          <h2 className="text-xl font-bold text-navy">Conta de anúncios da empresa</h2>
+          <h2 className="font-display text-base font-semibold text-ink">Conta de anúncios da empresa</h2>
           {c ? (
             <>
               <p className="mt-1 text-base text-ink-soft">
@@ -201,7 +198,7 @@ export default async function TrafficPage({
                       data-testid={`conta-${a.accountId}`}
                       className={cn(
                         "flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3",
-                        a.selected ? "border-navy bg-navy-50" : "border-line",
+                        a.selected ? "border-accent bg-accent-50" : "border-line",
                       )}
                     >
                       <span className="min-w-0">
@@ -242,7 +239,7 @@ export default async function TrafficPage({
       </div>
 
       <Card className="mt-6">
-        <h2 className="text-xl font-bold text-navy">Próximas etapas do módulo</h2>
+        <h2 className="font-display text-base font-semibold text-ink">Próximas etapas do módulo</h2>
         <ul className="mt-3 grid gap-2">
           {NEXT_STEPS.map(([n, t, d]) => (
             <li key={n}>

@@ -14,7 +14,7 @@ export default async function NoCompanyPage() {
     <>
       <AdminPageTitle title="Nenhuma empresa liberada" />
       <Card className="grid max-w-2xl gap-4 p-6">
-        <p className="text-lg">
+        <p className="text-base">
           {admin
             ? "Ainda não há empresas cadastradas. Cadastre a primeira para conectar a conta de anúncios da Meta."
             : "Seu usuário ainda não tem acesso a nenhuma empresa. Peça a um superadministrador para liberar."}
