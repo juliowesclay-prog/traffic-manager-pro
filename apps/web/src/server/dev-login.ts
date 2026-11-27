@@ -10,7 +10,7 @@ const DEMO_ADMIN_EMAIL = "superadmin@trafficmanager.test";
  * SOMENTE TESTES LOCAIS: e-mail e senha do administrador de DEMONSTRAÇÃO já preenchidos em
  * /admin/entrar. Exige DEV_PREFILL_LOGIN=true, nunca em produção, e só quando a página é aberta
  * por localhost no próprio computador (outros aparelhos da rede não recebem a senha). A conferência
- * da senha e o autenticador continuam acontecendo no servidor.
+ * da senha continua acontecendo no servidor.
  */
 export async function devPrefilledAdminLogin(): Promise<{ email: string; password: string } | null> {
   const host = (await headers()).get("host");

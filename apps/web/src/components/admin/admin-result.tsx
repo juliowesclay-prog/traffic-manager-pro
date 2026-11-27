@@ -26,8 +26,7 @@ export function AdminResultMessage({
             {result.tempPassword}
           </p>
           <p className="mt-2 text-sm">
-            Entregue por um canal seguro. No primeiro acesso a pessoa troca a senha e configura o
-            autenticador.
+            Entregue por um canal seguro. No primeiro acesso a pessoa troca a senha.
           </p>
         </div>
       ) : null}

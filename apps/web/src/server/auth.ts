@@ -1,6 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
-import { can, permissionsOf, requiresMfa, type Permission, type Role } from "@tmp/core";
+import { can, permissionsOf, type Permission, type Role } from "@tmp/core";
 import { activeCompany } from "./company";
 import { currentSession, type ActiveSession } from "./session";
 
@@ -10,22 +10,20 @@ export interface AuthContext {
   roles: Role[];
 }
 
-/** Usuário logado (ou null). Equipe sem MFA confirmado NÃO conta como autenticada para o painel. */
+/** Usuário logado (ou null). */
 export async function getAuth(): Promise<AuthContext | null> {
   const session = await currentSession();
   if (!session) return null;
   return { session, user: session.user, roles: session.user.roles.map((r) => r.role as Role) };
 }
 
-/** Páginas do painel: exige perfil de equipe, MFA confirmado nesta sessão e a permissão pedida. */
+/** Páginas do painel: exige perfil de equipe e a permissão pedida. */
 export async function requireStaff(
   permission: Permission = "admin:access",
   opts: { allowPasswordChange?: boolean } = {},
 ): Promise<AuthContext> {
   const auth = await getAuth();
   if (!auth || !can(auth.roles, "admin:access")) redirect("/admin/entrar");
-  if (!auth.user.mfaEnabledAt) redirect("/admin/mfa/configurar");
-  if (!auth.session.mfaVerified) redirect("/admin/verificar");
   // Senha provisória criada por um administrador: troca obrigatória antes de usar o painel.
   if (auth.user.mustChangePassword && !opts.allowPasswordChange) redirect("/admin/conta");
   if (!can(auth.roles, permission)) redirect("/admin/sem-permissao");
@@ -50,9 +48,6 @@ export async function requireCompanyStaff(permission: Permission = "traffic:read
 export async function apiGuard(permission: Permission): Promise<AuthContext | Response> {
   const auth = await getAuth();
   if (!auth) return Response.json({ erro: "nao_autenticado" }, { status: 401 });
-  if (requiresMfa(auth.roles) && !auth.session.mfaVerified) {
-    return Response.json({ erro: "mfa_obrigatorio" }, { status: 403 });
-  }
   if (auth.user.mustChangePassword)
     return Response.json({ erro: "troca_de_senha_obrigatoria" }, { status: 403 });
   if (!can(auth.roles, permission)) return Response.json({ erro: "sem_permissao" }, { status: 403 });

@@ -1,13 +1,12 @@
 /**
  * Dados de DEMONSTRAÇÃO para desenvolvimento e testes E2E. Recusa rodar em produção.
  * - Duas empresas DEMO (para provar a separação dos dados entre empresas).
- * - Um usuário por perfil (e-mail @trafficmanager.test) com a senha DEMO_USER_PASSWORD e o
- *   MFA já configurado com DEMO_MFA_SECRET (para os testes gerarem o código). Tudo marcado isDemo.
+ * - Um usuário por perfil (e-mail @trafficmanager.test) com a senha DEMO_USER_PASSWORD.
+ *   Tudo marcado isDemo.
  * - O marketing só enxerga a Empresa A; o superadministrador enxerga as duas.
  */
 import { hash } from "@node-rs/argon2";
 import { PrismaClient, type Role } from "@prisma/client";
-import { encrypt } from "../src/crypto";
 
 if (process.env.APP_ENV === "production") {
   console.error("seed-demo recusado: APP_ENV=production");
@@ -43,9 +42,8 @@ const ONLY_COMPANIES = process.argv.includes("--so-empresas");
 
 async function main() {
   const password = process.env.DEMO_USER_PASSWORD;
-  const mfaSecret = process.env.DEMO_MFA_SECRET;
-  if (!ONLY_COMPANIES && (!password || password.length < 12 || !mfaSecret)) {
-    throw new Error("Defina DEMO_USER_PASSWORD (12+ caracteres) e DEMO_MFA_SECRET no .env (pnpm env:init)");
+  if (!ONLY_COMPANIES && (!password || password.length < 12)) {
+    throw new Error("Defina DEMO_USER_PASSWORD (12+ caracteres) no .env (pnpm env:init)");
   }
   const companyIds = new Map<string, string>();
   for (const c of COMPANIES) {
@@ -56,7 +54,7 @@ async function main() {
     });
     companyIds.set(c.slug, row.id);
   }
-  if (ONLY_COMPANIES || !password || !mfaSecret) {
+  if (ONLY_COMPANIES || !password) {
     console.warn(`Seed demo: ${COMPANIES.length} empresas DEMO (sem usuários de demonstração).`);
     return;
   }
@@ -64,14 +62,12 @@ async function main() {
   for (const s of STAFF) {
     const user = await prisma.user.upsert({
       where: { email: s.email },
-      update: { passwordHash, mfaSecretEnc: encrypt(mfaSecret), failedLoginCount: 0, lockedUntil: null },
+      update: { passwordHash, failedLoginCount: 0, lockedUntil: null },
       create: {
         email: s.email,
         name: s.name,
         passwordHash,
         isDemo: true,
-        mfaSecretEnc: encrypt(mfaSecret),
-        mfaEnabledAt: new Date(),
         roles: { create: { role: s.role } },
       },
     });
@@ -82,7 +78,7 @@ async function main() {
         create: { companyId: companyIds.get(slug)!, userId: user.id },
       });
   }
-  console.warn(`Seed demo: ${COMPANIES.length} empresas DEMO e ${STAFF.length} usuários (MFA de demonstração).`);
+  console.warn(`Seed demo: ${COMPANIES.length} empresas DEMO e ${STAFF.length} usuários DEMO.`);
 }
 
 main()

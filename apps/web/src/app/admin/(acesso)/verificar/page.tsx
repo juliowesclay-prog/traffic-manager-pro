@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import { MfaVerifyView } from "@/components/auth/access-views";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Verificação em duas etapas" };
-
+/** A verificação em duas etapas foi retirada (27/11/2026). Links antigos voltam para o painel. */
 export default function MfaVerifyPage() {
-  return <MfaVerifyView area="admin" />;
+  redirect("/admin");
 }

@@ -1,6 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
-import { totp } from "@tmp/core";
 import { prisma } from "@tmp/db";
 
 /** Utilidades dos testes E2E. Só funcionam contra o banco de DESENVOLVIMENTO (dados DEMO). */
@@ -16,23 +15,18 @@ export async function resetRateLimits() {
 }
 
 export const DEMO_PASSWORD = () => process.env.DEMO_USER_PASSWORD!;
-export const demoTotp = () => totp(process.env.DEMO_MFA_SECRET!, Date.now());
 
-/** Login completo de equipe de demonstração (senha + MFA). Abre a Empresa A, se o usuário puder. */
+/** Login de equipe de demonstração (e-mail + senha). Abre a Empresa A, se o usuário puder. */
 export async function staffLogin(page: Page, email: string, company: string = DEMO_COMPANY_A) {
-  // Só nos testes: libera reutilizar o código TOTP da janela atual (a proteção contra reuso é testada à parte).
-  const user = await prisma.user.update({ where: { email }, data: { mfaLastStep: null } });
+  const user = await prisma.user.findUniqueOrThrow({ where: { email } });
   await page.goto("/admin/entrar");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(DEMO_PASSWORD());
   await page.getByRole("button", { name: "Continuar" }).click();
-  await expect(page).toHaveURL(/\/admin\/verificar$/);
-  await page.getByLabel(/Código de 6 números/).fill(demoTotp());
-  await page.getByRole("button", { name: "Entrar no painel" }).click();
   await expect(page).toHaveURL(/\/admin(\/trafego|\/conta|\/sem-empresa)?$/);
   // Sessão recém-criada: aponta para a empresa pedida (o seletor no menu faz o mesmo pela tela).
   const session = await prisma.session.findFirstOrThrow({
-    where: { userId: user.id, revokedAt: null, mfaVerified: true },
+    where: { userId: user.id, revokedAt: null },
     orderBy: { createdAt: "desc" },
   });
   const allowed =

@@ -50,10 +50,5 @@ export function can(roles: readonly Role[], permission: Permission): boolean {
   return permissionsOf(roles).has(permission);
 }
 
-/** Toda a equipe usa autenticador (MFA). */
-export function requiresMfa(roles: readonly Role[]): boolean {
-  return roles.length > 0;
-}
-
 /** SUPERADMIN enxerga todas as empresas; os demais, só as liberadas para eles. */
 export const seesAllCompanies = (roles: readonly Role[]) => roles.includes("SUPERADMIN");
