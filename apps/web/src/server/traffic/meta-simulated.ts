@@ -2,7 +2,12 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { META_SCOPES } from "@tmp/core";
 import { MetaError, type MetaGateway } from "./meta-gateway";
-import { simulatedConversions, simulatedReader, simulatedWriter } from "./meta-simulated-ads";
+import {
+  simulatedConversions,
+  simulatedPublisher,
+  simulatedReader,
+  simulatedWriter,
+} from "./meta-simulated-ads";
 
 /**
  * Meta SIMULADA — somente desenvolvimento e testes (recusa produção). Não fala com a Meta: a "tela de
@@ -20,6 +25,7 @@ export const metaSimulatedGateway: MetaGateway = {
   read: simulatedReader,
   write: simulatedWriter,
   conversions: simulatedConversions,
+  publish: simulatedPublisher,
   name: "simulado",
 
   authorizeUrl(state, redirectUri) {

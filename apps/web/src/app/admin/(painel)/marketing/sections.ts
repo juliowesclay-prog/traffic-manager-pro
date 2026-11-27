@@ -36,11 +36,26 @@ export const MARKETING_SECTIONS = [
     summary: "Guarde imagens, carrosséis e vídeos com versões, status e aprovação.",
   },
   {
+    href: "/admin/marketing/canva",
+    label: "Canva",
+    icon: "Brush",
+    stage: 5,
+    summary: "Conecte sua conta do Canva e traga designs prontos como imagem, carrossel ou vídeo.",
+  },
+  {
     href: "/admin/marketing/enviar-meta",
     label: "Enviar para Meta",
     icon: "Send",
     stage: 6,
     summary: "Envie criativos aprovados para uma campanha existente, sempre como anúncio pausado.",
+  },
+  {
+    href: "/admin/marketing/desempenho",
+    label: "Desempenho",
+    icon: "TrendingUp",
+    stage: 7,
+    summary:
+      "Veja qual criativo traz cliques, cadastros e vendas reais, e compare imagem, carrossel e vídeo.",
   },
   {
     href: "/admin/marketing/marca",
@@ -52,4 +67,4 @@ export const MARKETING_SECTIONS = [
 ] as const;
 
 /** Etapa do módulo já entregue (as seções de etapas seguintes mostram o que vem e quando). */
-export const MARKETING_STAGE_DONE = 1;
+export const MARKETING_STAGE_DONE = 7;

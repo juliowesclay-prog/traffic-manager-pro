@@ -17,14 +17,16 @@ Cópia do módulo Gestor de Tráfego do Prosed+ Saúde, sem alterar o original.
 - **Fase 4 — SaaS**: cadastro de clientes, planos e cobrança, painel por cliente, termos de uso.
 
 ## Módulo Marketing IA (por etapas; plano e custos aprovados à parte)
-- **Etapa 1 — estrutura e biblioteca (27/11/2026, aguardando aprovação)**: item Marketing no menu e as 7 seções;
+- **Etapa 1 — estrutura e biblioteca (27/11/2026, aprovada e na main)**: item Marketing no menu e as 7 seções;
   biblioteca de criativos (imagem, carrossel de 2 a 10 imagens, vídeo) com versões, status, aprovação, duplicar,
   excluir e pesquisa; envio de arquivos conferidos pelo conteúdo (PNG, JPG, WEBP, MP4, MOV), privados e por empresa;
   kit da marca (identidade, logomarca, redes, chamadas, informações oficiais com aprovação).
   Armazenamento local nesta etapa; na Vercel o envio fica bloqueado até ligar o Cloudflare R2.
-- Etapa 2 — artes com IA de imagens (depende do provedor de imagens e do R2).
-- Etapa 3 — carrosséis (textos, páginas, prévia, ZIP).
-- Etapa 4 — editor de vídeos (transcrição, cortes, legendas, FFmpeg em servidor fora da Vercel, fila no Postgres).
-- Etapa 5 — Canva (opcional; preenchimento de modelos exige Canva Enterprise).
-- Etapa 6 — enviar para a Meta (anúncio sempre criado pausado; depende do app real da Meta).
-- Etapa 7 — inteligência de desempenho (métricas reais, com período citado).
+- **Etapas 2 a 7 (27/11/2026, aguardando aprovação do merge)** — detalhes, configuração e custos em `docs/MARKETING-IA.md`:
+  - Etapa 2: Estúdio IA (Claude, só com informações aprovadas da marca) e Criar Artes (PNG desenhado no servidor, 4 modelos, 3 formatos, foto por IA opcional).
+  - Etapa 3: Criar Carrossel (2 a 10 páginas, capa e chamada final, ZIP).
+  - Etapa 4: Editor de Vídeos (fila no Postgres + servidor FFmpeg fora da Vercel: cortes, silêncios, 4 formatos, legendas, logomarca, encerramento; transcrição Whisper).
+  - Etapa 5: Canva (cada pessoa conecta a própria conta; importa PNG, carrossel ou MP4).
+  - Etapa 6: Enviar para Meta (anúncio SEMPRE pausado, num conjunto existente, com alerta de política e histórico).
+  - Etapa 7: Desempenho (por criativo e por tipo, com vendas reais e período citado).
+  - Pendente de contratação/autorização: Cloudflare R2, chave da OpenAI, chave da Anthropic, servidor de vídeo, app do Canva e app real da Meta com ads_management.

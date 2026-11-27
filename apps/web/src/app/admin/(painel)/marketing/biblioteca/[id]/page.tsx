@@ -14,6 +14,7 @@ import {
 } from "@tmp/core";
 import { buttonClasses, Card, cn } from "@tmp/ui";
 import { AdminPageTitle } from "@/components/admin/page-title";
+import { LinkButton } from "@/components/link-button";
 import { fileUrl, MediaPreview } from "@/components/marketing/media-preview";
 import { requireCompanyStaff } from "@/server/auth";
 import { prisma } from "@/server/db";
@@ -21,6 +22,7 @@ import { getCreative } from "@/server/marketing/creatives";
 import { storageReady } from "@/server/marketing/storage";
 import { DeleteForm, DetailsForm, DuplicateButton, NewVersionForm, StatusForm } from "../forms";
 import { STATUS_TONE } from "../status-tone";
+import { LinkAdForm, UnlinkAdButton } from "../../enviar-meta/forms";
 
 export const metadata: Metadata = { title: "Criativo" };
 
@@ -35,6 +37,17 @@ export default async function CreativePage({ params }: { params: Promise<{ id: s
   const c = await getCreative(id);
   if (!c) notFound();
   const canManage = can(roles, "marketing:manage");
+  const canApprove = can(roles, "marketing:approve");
+  const ads = await prisma.metaAd.findMany({
+    where: canManage ? { missingSince: null } : { externalId: { in: c.metaAdIds } },
+    orderBy: { name: "asc" },
+    take: 500,
+    select: { externalId: true, name: true },
+  });
+  const adNames = new Map(ads.map((a) => [a.externalId, a.name]));
+  const linkable = ads
+    .filter((a) => !c.metaAdIds.includes(a.externalId))
+    .map((a) => ({ id: a.externalId, name: a.name }));
   const [brands, campaigns] = canManage
     ? await Promise.all([
         prisma.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -217,9 +230,50 @@ export default async function CreativePage({ params }: { params: Promise<{ id: s
               </div>
             ) : null}
             {c.status === "APROVADO" ? (
-              <p className="mt-4 rounded-lg bg-navy-50 p-3 text-sm">
-                Pronto para a Meta. O envio (anúncio criado pausado) chega na Etapa 6.
+              <div className="mt-4 rounded-lg bg-navy-50 p-3 text-sm">
+                <p>Pronto para a Meta. O anúncio é criado pausado; ativar é sempre decisão sua.</p>
+                {canApprove ? (
+                  <LinkButton href={`/admin/marketing/enviar-meta?criativo=${c.id}`} className="mt-2">
+                    Enviar para a Meta
+                  </LinkButton>
+                ) : null}
+              </div>
+            ) : null}
+          </Card>
+
+          <Card data-testid="anuncios-vinculados">
+            <h2 className="font-display text-base font-semibold text-ink">Anúncios na Meta</h2>
+            {c.metaAdIds.length ? (
+              <ul className="mt-3 grid gap-1 text-sm">
+                {c.metaAdIds.map((ad) => (
+                  <li key={ad} className="flex flex-wrap items-center justify-between gap-2">
+                    <span>
+                      {adNames.get(ad) ?? "Anúncio"} <span className="text-ink-soft">({ad})</span>
+                    </span>
+                    {canManage ? <UnlinkAdButton creativeId={c.id} adId={ad} /> : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-ink-soft">Nenhum anúncio ligado a este criativo ainda.</p>
+            )}
+            {c.metaAdIds.length ? (
+              <p className="mt-2 text-sm">
+                <Link
+                  href={`/admin/marketing/desempenho?criativo=${c.id}`}
+                  className="font-semibold text-accent-text underline"
+                >
+                  Ver o desempenho
+                </Link>
               </p>
+            ) : null}
+            {canManage ? (
+              <div className="mt-4 border-t border-line pt-4">
+                <p className="mb-2 text-sm text-ink-soft">
+                  Já publicou este criativo por fora? Vincule o anúncio para medir o resultado.
+                </p>
+                <LinkAdForm creativeId={c.id} ads={linkable} />
+              </div>
             ) : null}
           </Card>
 

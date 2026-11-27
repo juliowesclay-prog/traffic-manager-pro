@@ -21,3 +21,5 @@ export * from "./art";
 export * from "./marketing-ai";
 export * from "./zip";
 export * from "./video";
+export * from "./meta-publish";
+export * from "./creative-performance";

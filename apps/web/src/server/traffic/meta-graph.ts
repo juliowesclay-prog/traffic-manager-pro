@@ -17,6 +17,7 @@ import {
   type MetaConversionsSender,
   type MetaGateway,
   type MetaInsightRow,
+  type MetaAdsPublisher,
 } from "./meta-gateway";
 
 /**
@@ -293,10 +294,148 @@ const conversions: MetaConversionsSender = {
   },
 };
 
+/** Envio de vídeo com o arquivo no corpo (multipart): usado quando o armazenamento é local. */
+async function postMultipart<T>(
+  path: string,
+  token: string,
+  fields: Record<string, string>,
+  file: { bytes: Uint8Array; filename: string },
+) {
+  config();
+  const form = new FormData();
+  for (const [k, v] of Object.entries(withToken(token, fields))) form.append(k, v);
+  form.append(
+    "source",
+    new Blob([file.bytes as Uint8Array<ArrayBuffer>], { type: "video/mp4" }),
+    file.filename,
+  );
+  let res: Response;
+  try {
+    res = await fetch(graph(path), {
+      method: "POST",
+      body: form,
+      cache: "no-store",
+      signal: AbortSignal.timeout(300_000),
+    });
+  } catch (error) {
+    throw new MetaError(
+      "A Meta não respondeu ao envio do vídeo. Tente de novo.",
+      `POST ${path}: ${String(error)}`,
+    );
+  }
+  const body = (await res.json().catch(() => ({}))) as T & GraphError;
+  if (!res.ok || body.error) {
+    const e = body.error ?? {};
+    throw new MetaError(
+      "A Meta recusou o vídeo.",
+      `POST ${path} → ${res.status} code=${e.code ?? "?"} trace=${e.fbtrace_id ?? "?"}`,
+      e.code === 190,
+    );
+  }
+  return body;
+}
+
+const ACT = /^act_\d{1,25}$/;
+const actOk = (accountId: string) => {
+  if (!ACT.test(accountId)) throw new MetaError("Conta de anúncios inválida.", accountId);
+};
+
+const publisher: MetaAdsPublisher = {
+  async pages(token, accountId) {
+    actOk(accountId);
+    const rows = await all<{ id: string; name?: string; instagram_business_account?: { id?: string } }>(
+      token,
+      `/${accountId}/promote_pages`,
+      { fields: "id,name,instagram_business_account", limit: "100" },
+    );
+    return rows.map((p) => ({
+      id: p.id,
+      name: p.name ?? p.id,
+      instagramId: p.instagram_business_account?.id ?? null,
+    }));
+  },
+
+  async uploadImage(token, accountId, bytes, filename) {
+    actOk(accountId);
+    const name = filename.replace(/[^\w.-]/g, "_").slice(0, 100) || "imagem.png";
+    const r = await call<{ images?: Record<string, { hash?: string }> }>(
+      "POST",
+      `/${accountId}/adimages`,
+      withToken(token, { bytes: Buffer.from(bytes).toString("base64"), name }),
+    );
+    const hash = Object.values(r.images ?? {})[0]?.hash;
+    if (!hash) throw new MetaError("A Meta não devolveu a imagem enviada.", "adimages sem hash");
+    return hash;
+  },
+
+  async uploadVideo(token, accountId, source, name) {
+    actOk(accountId);
+    const title = name.slice(0, 200);
+    const created =
+      "url" in source
+        ? await call<{ id?: string }>(
+            "POST",
+            `/${accountId}/advideos`,
+            withToken(token, { file_url: source.url, name: title }),
+          )
+        : await postMultipart<{ id?: string }>(`/${accountId}/advideos`, token, { name: title }, source);
+    const videoId = created.id;
+    if (!videoId) throw new MetaError("A Meta não devolveu o vídeo enviado.", "advideos sem id");
+    // A Meta processa o vídeo antes de aceitá-lo num anúncio: espera até ~3 minutos.
+    for (let i = 0; i < 36; i++) {
+      const v = await call<{ status?: { video_status?: string }; picture?: string }>(
+        "GET",
+        `/${videoId}`,
+        withToken(token, { fields: "status,picture" }),
+      );
+      const st = v.status?.video_status;
+      if (st === "error")
+        throw new MetaError("A Meta não conseguiu processar o vídeo.", `video ${videoId} error`);
+      if (st === "ready" && v.picture) return { videoId, thumbnailUrl: v.picture };
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+    throw new MetaError(
+      "A Meta ainda está processando o vídeo. Tente enviar de novo em alguns minutos.",
+      `video ${videoId} timeout`,
+    );
+  },
+
+  async createCreative(token, accountId, name, objectStorySpec) {
+    actOk(accountId);
+    const r = await call<{ id?: string }>(
+      "POST",
+      `/${accountId}/adcreatives`,
+      withToken(token, { name: name.slice(0, 100), object_story_spec: JSON.stringify(objectStorySpec) }),
+    );
+    if (!r.id) throw new MetaError("A Meta não devolveu o criativo.", "adcreatives sem id");
+    return r.id;
+  },
+
+  async createPausedAd(token, accountId, input) {
+    actOk(accountId);
+    if (!/^\d{1,30}$/.test(input.adSetId) || !/^\d{1,30}$/.test(input.creativeId))
+      throw new MetaError("Dados do anúncio inválidos.", "ids");
+    const r = await call<{ id?: string }>(
+      "POST",
+      `/${accountId}/ads`,
+      withToken(token, {
+        name: input.name.slice(0, 120),
+        adset_id: input.adSetId,
+        creative: JSON.stringify({ creative_id: input.creativeId }),
+        // Regra do sistema: anúncio criado aqui SEMPRE nasce pausado.
+        status: "PAUSED",
+      }),
+    );
+    if (!r.id) throw new MetaError("A Meta não devolveu o anúncio.", "ads sem id");
+    return r.id;
+  },
+};
+
 export const metaGraphGateway: MetaGateway = {
   read: reader,
   write: writer,
   conversions,
+  publish: publisher,
   name: "meta",
 
   authorizeUrl(state, redirectUri) {

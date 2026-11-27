@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
     // Estilos inline são usados pelo React/Next (atributo style); não executam código.
     `style-src 'self' 'unsafe-inline'`,
     // Miniaturas dos anúncios (Gestor de Tráfego) vêm dos servidores de imagem da Meta.
-    `img-src 'self' data: blob: https://*.fbcdn.net${files}`,
+    `img-src 'self' data: blob: https://*.fbcdn.net https://*.canva.com${files}`,
     // Vídeos do Marketing: do próprio site ou, com o R2, por link temporário assinado.
     `media-src 'self' blob:${files}`,
     `font-src 'self'`,
