@@ -25,6 +25,8 @@ export interface MetaGateway {
   write: MetaAdsWriter;
   /** API de Conversões (8.7): envia eventos de cadastro e venda ao conjunto de dados (pixel). */
   conversions: MetaConversionsSender;
+  /** Marketing, Etapa 6: envia mídia e cria o anúncio SEMPRE pausado. */
+  publish: MetaAdsPublisher;
   name: "meta" | "simulado";
   authorizeUrl(state: string, redirectUri: string): string;
   /** Troca o código da autorização por uma chave de longa duração. */
@@ -162,4 +164,38 @@ export interface MetaConversionsSender {
     events: Record<string, unknown>[],
     testEventCode: string | null,
   ): Promise<{ received: number }>;
+}
+
+// ─── Marketing, Etapa 6: criação de anúncios (sempre pausados) ─────────────────
+
+export interface MetaPageInfo {
+  id: string;
+  name: string;
+  instagramId: string | null;
+}
+
+export interface MetaAdsPublisher {
+  /** Páginas que a conta de anúncios pode usar para assinar anúncios. */
+  pages(token: string, accountId: string): Promise<MetaPageInfo[]>;
+  /** Envia uma imagem à biblioteca da conta; devolve o hash. */
+  uploadImage(token: string, accountId: string, bytes: Uint8Array, filename: string): Promise<string>;
+  /** Envia um vídeo (por link temporário ou pelos bytes) e espera ficar pronto; devolve id e miniatura. */
+  uploadVideo(
+    token: string,
+    accountId: string,
+    source: { url: string } | { bytes: Uint8Array; filename: string },
+    name: string,
+  ): Promise<{ videoId: string; thumbnailUrl: string }>;
+  createCreative(
+    token: string,
+    accountId: string,
+    name: string,
+    objectStorySpec: Record<string, unknown>,
+  ): Promise<string>;
+  /** Cria o anúncio no conjunto, SEMPRE com status PAUSED. */
+  createPausedAd(
+    token: string,
+    accountId: string,
+    input: { name: string; adSetId: string; creativeId: string },
+  ): Promise<string>;
 }

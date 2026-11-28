@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Bot,
   Building2,
   LayoutDashboard,
   Link2,
@@ -19,6 +20,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@tmp/ui";
 
 const ICONS = {
+  Bot,
   Building2,
   LayoutDashboard,
   Link2,

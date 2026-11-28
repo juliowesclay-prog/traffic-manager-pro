@@ -41,7 +41,25 @@ test.beforeAll(async () => {
     video = path.join(DIR, "video.mp4");
     execFileSync(
       "ffmpeg",
-      ["-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=size=720x1280:rate=25", "-f", "lavfi", "-i", "sine=frequency=440", "-t", "3", "-pix_fmt", "yuv420p", "-shortest", video],
+      [
+        "-y",
+        "-loglevel",
+        "error",
+        "-f",
+        "lavfi",
+        "-i",
+        "testsrc=size=720x1280:rate=25",
+        "-f",
+        "lavfi",
+        "-i",
+        "sine=frequency=440",
+        "-t",
+        "3",
+        "-pix_fmt",
+        "yuv420p",
+        "-shortest",
+        video,
+      ],
       { stdio: "ignore" },
     );
   } catch {
@@ -74,19 +92,34 @@ async function importCreative(page: Page, name: string, paths: string[]) {
   await page.getByRole("button", { name: "Enviar para a biblioteca" }).click();
 }
 
-test("menu Marketing, seções e páginas das próximas etapas sem botões falsos", async ({ page }) => {
+test("menu Marketing com todas as seções disponíveis", async ({ page }) => {
   await staffLogin(page, "marketing@trafficmanager.test");
   await page.goto("/admin/trafego/painel");
-  await page.getByRole("navigation", { name: "Painel" }).first().getByRole("link", { name: "Marketing" }).click();
+  await page
+    .getByRole("navigation", { name: "Painel" })
+    .first()
+    .getByRole("link", { name: "Marketing" })
+    .click();
   await expect(page).toHaveURL(/\/admin\/marketing$/);
   await expect(page.getByRole("heading", { name: "Marketing", level: 1 })).toBeVisible();
-  for (const s of ["Estúdio IA", "Criar Artes", "Criar Carrossel", "Editor de Vídeos IA", "Biblioteca de Criativos", "Enviar para Meta", "Kit da marca"])
-    await expect(page.getByRole("navigation", { name: "Seções do Marketing" }).getByRole("link", { name: s })).toBeVisible();
+  for (const s of [
+    "Estúdio IA",
+    "Criar Artes",
+    "Criar Carrossel",
+    "Editor de Vídeos IA",
+    "Biblioteca de Criativos",
+    "Canva",
+    "Enviar para Meta",
+    "Desempenho",
+    "Kit da marca",
+  ])
+    await expect(
+      page.getByRole("navigation", { name: "Seções do Marketing" }).getByRole("link", { name: s }),
+    ).toBeVisible();
 
-  await page.goto("/admin/marketing/videos");
-  await expect(page.getByTestId("em-breve")).toContainText("Etapa 4");
+  await expect(page.getByText(/^Etapa \d$/)).toHaveCount(0);
   await page.goto("/admin/marketing/enviar-meta");
-  await expect(page.getByTestId("em-breve")).toContainText("PAUSADO");
+  await expect(page.getByTestId("aprovados")).toBeVisible();
 
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag22aa"]).analyze();
   expect(r.violations).toEqual([]);
@@ -108,7 +141,13 @@ test("kit da marca: identidade, logomarca e informação oficial que só o Gesto
   await expect(page.getByText("Kit da marca salvo.")).toBeVisible();
 
   const brand = await prisma.brand.findFirstOrThrow({ where: { name: `${PREFIX} Marca` } });
-  expect(brand).toMatchObject({ companyId: DEMO_COMPANY_A, website: "https://exemplo-demo.com.br/", colors: ["#0F8A5F"], ctas: ["Assine agora", "Fale com a gente"], headingFont: "Sora" });
+  expect(brand).toMatchObject({
+    companyId: DEMO_COMPANY_A,
+    website: "https://exemplo-demo.com.br/",
+    colors: ["#0F8A5F"],
+    ctas: ["Assine agora", "Fale com a gente"],
+    headingFont: "Sora",
+  });
 
   await page.getByLabel("Arquivo da logomarca").setInputFiles(files.logo!);
   await page.getByRole("button", { name: "Enviar logomarca" }).click();
@@ -128,7 +167,9 @@ test("kit da marca: identidade, logomarca e informação oficial que só o Gesto
   await page.goto(`/admin/marketing/marca/${brand.id}`);
   await page.getByTestId(`fato-${fact.id}`).getByRole("button", { name: "Aprovar" }).click();
   await expect(page.getByTestId(`fato-${fact.id}`)).toContainText("Aprovada");
-  expect(await prisma.brandFact.findUniqueOrThrow({ where: { id: fact.id } })).toMatchObject({ status: "APROVADO" });
+  expect(await prisma.brandFact.findUniqueOrThrow({ where: { id: fact.id } })).toMatchObject({
+    status: "APROVADO",
+  });
 });
 
 test("biblioteca: imagem com versões, status, aprovação, duplicar e excluir", async ({ page }) => {
@@ -140,7 +181,10 @@ test("biblioteca: imagem com versões, status, aprovação, duplicar e excluir",
   await expect(page.getByTestId("previa")).toContainText("1:1 (feed quadrado)");
 
   // O arquivo final existe e é servido pelo servidor (com download).
-  const c = await prisma.creative.findUniqueOrThrow({ where: { id }, include: { versions: { include: { assets: true } } } });
+  const c = await prisma.creative.findUniqueOrThrow({
+    where: { id },
+    include: { versions: { include: { assets: true } } },
+  });
   const asset = c.versions[0]!.assets[0]!;
   expect(asset).toMatchObject({ status: "PRONTO", mimeType: "image/png", width: 1080, height: 1080 });
   const res = await page.request.get(`/api/v1/admin/marketing/arquivos/${asset.id}?baixar=1`);
@@ -209,7 +253,9 @@ test("carrossel e vídeo reais entram com páginas, medidas e duração", async 
   });
   expect(v).toMatchObject({ kind: "VIDEO", mimeType: "video/mp4", width: 720, height: 1280 });
   // Trechos (Range) para o vídeo tocar e avançar no navegador.
-  const part = await page.request.get(`/api/v1/admin/marketing/arquivos/${v.id}`, { headers: { Range: "bytes=0-99" } });
+  const part = await page.request.get(`/api/v1/admin/marketing/arquivos/${v.id}`, {
+    headers: { Range: "bytes=0-99" },
+  });
   expect(part.status()).toBe(206);
   expect((await part.body()).length).toBe(100);
 });
@@ -220,14 +266,22 @@ test("arquivos disfarçados ou fora do padrão são recusados", async ({ page })
   await expect(page.getByTestId("envios")).toContainText("Formato não aceito");
   await importCreative(page, `${PREFIX} Pequena`, [files.small!]);
   await expect(page.getByTestId("envios")).toContainText("pequena demais");
-  expect(await prisma.creative.count({ where: { name: { in: [`${PREFIX} Disfarçado`, `${PREFIX} Pequena`] } } })).toBe(0);
-  const rejected = await prisma.mediaAsset.findMany({ where: { originalName: { in: ["disfarcado.png", "pequena.png"] } } });
+  expect(
+    await prisma.creative.count({ where: { name: { in: [`${PREFIX} Disfarçado`, `${PREFIX} Pequena`] } } }),
+  ).toBe(0);
+  const rejected = await prisma.mediaAsset.findMany({
+    where: { originalName: { in: ["disfarcado.png", "pequena.png"] } },
+  });
   expect(rejected.every((a) => a.status === "REJEITADO")).toBe(true);
 });
 
 test("separação: leitura não envia e outra empresa não vê os arquivos", async ({ page }) => {
   const asset = await prisma.mediaAsset.findFirstOrThrow({
-    where: { status: "PRONTO", companyId: DEMO_COMPANY_A, version: { creative: { name: { startsWith: PREFIX } } } },
+    where: {
+      status: "PRONTO",
+      companyId: DEMO_COMPANY_A,
+      version: { creative: { name: { startsWith: PREFIX } } },
+    },
   });
 
   await staffLogin(page, "leitura@trafficmanager.test");

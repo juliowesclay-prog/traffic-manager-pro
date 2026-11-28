@@ -5,6 +5,7 @@ import { type Prisma } from "@tmp/db";
 import { prisma } from "@/server/db";
 import {
   MetaError,
+  type MetaAdsPublisher,
   type MetaAdsReader,
   type MetaAdsWriter,
   type MetaConversionsSender,
@@ -355,5 +356,58 @@ export const simulatedConversions: MetaConversionsSender = {
       update: { value },
     });
     return { received: events.length };
+  },
+};
+
+/**
+ * Criação de anúncios SIMULADA (Marketing, Etapa 6): guarda o que "foi criado" no Setting
+ * "simulado.meta.anuncios_criados" (para os testes conferirem que nasceu PAUSADO e com o formato certo).
+ * Falha injetável: metodos ["publish"].
+ */
+export const SIMULATED_PUBLISH_KEY = "simulado.meta.anuncios_criados";
+async function recordPublish(entry: Record<string, unknown>) {
+  const cur = await prisma.setting.findUnique({ where: { key: SIMULATED_PUBLISH_KEY } });
+  const prev = ((cur?.value as { itens?: unknown[] } | null)?.itens ?? []).slice(-100);
+  const value = {
+    itens: [...prev, { ...entry, em: new Date().toISOString() }],
+  } as unknown as Prisma.InputJsonValue;
+  await prisma.setting.upsert({
+    where: { key: SIMULATED_PUBLISH_KEY },
+    create: { key: SIMULATED_PUBLISH_KEY, value, description: "DEMO: anúncios criados na Meta simulada" },
+    update: { value },
+  });
+}
+const fakeId = (prefix: string, seedText: string) =>
+  `${prefix}${String(seed(seedText + Date.now()))
+    .padStart(10, "0")
+    .slice(0, 10)}`;
+
+export const simulatedPublisher: MetaAdsPublisher = {
+  async pages() {
+    await guard("publish");
+    return [{ id: "1090000000000001", name: "DEMO Página da empresa", instagramId: "1780000000000001" }];
+  },
+  async uploadImage(_token, _account, bytes, filename) {
+    await guard("publish");
+    return createHash("sha256").update(bytes).update(filename).digest("hex").slice(0, 32);
+  },
+  async uploadVideo(_token, _account, source) {
+    await guard("publish");
+    const v = fakeId("239100", "url" in source ? source.url : source.filename);
+    return { videoId: v, thumbnailUrl: `https://scontent.fbcdn.net/demo/${v}.jpg` };
+  },
+  async createCreative(_token, accountId, name, spec) {
+    await guard("publish");
+    const id = fakeId("239200", name);
+    await recordPublish({ tipo: "criativo", id, conta: accountId, nome: name, spec });
+    return id;
+  },
+  async createPausedAd(_token, accountId, input) {
+    await guard("publish");
+    if (!adSets().some((s) => s.id === input.adSetId))
+      throw new MetaError("A Meta recusou a operação.", `simulado: conjunto ${input.adSetId} não existe`);
+    const id = fakeId("239300", input.name);
+    await recordPublish({ tipo: "anuncio", id, conta: accountId, ...input, status: "PAUSED" });
+    return id;
   },
 };

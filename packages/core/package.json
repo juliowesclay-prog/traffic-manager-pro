@@ -17,6 +17,11 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./marketing": "./src/marketing.ts"
+    "./marketing": "./src/marketing.ts",
+    "./art": "./src/art.ts",
+    "./marketing-ai": "./src/marketing-ai.ts",
+    "./video": "./src/video.ts",
+    "./meta-publish": "./src/meta-publish.ts",
+    "./ai-credentials": "./src/ai-credentials.ts"
   }
 }

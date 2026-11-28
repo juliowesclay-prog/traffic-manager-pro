@@ -23,7 +23,8 @@
     "db:studio": "pnpm --filter @tmp/db db:studio",
     "db:seed:demo": "pnpm --filter @tmp/db db:seed:demo",
     "worker": "node scripts/worker.mjs",
-    "demo:acesso": "node scripts/acesso-demo.mjs"
+    "demo:acesso": "node scripts/acesso-demo.mjs",
+    "video-worker": "pnpm --filter @tmp/video-worker start"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.1",

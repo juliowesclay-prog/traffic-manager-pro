@@ -5,7 +5,7 @@ import { AI_SUGGESTION_LABELS, AI_SUGGESTION_TO_ACTION, can, type ReviewedAnalys
 import { Card, cn } from "@tmp/ui";
 import { AdminPageTitle } from "@/components/admin/page-title";
 import { requireCompanyStaff } from "@/server/auth";
-import { aiProviderName } from "@/server/traffic/ai";
+import { resolveAnalyst } from "@/server/traffic/ai";
 import { AI_PERIODS, getAnalysis, listAnalyses } from "@/server/traffic/ai/analysis";
 import { activeConnection } from "@/server/traffic/connection";
 import { AnalyzeForm } from "../forms";
@@ -24,7 +24,8 @@ export default async function TrafficAiPage({
   const { roles } = await requireCompanyStaff("traffic:read");
   const canManage = can(roles, "traffic:manage");
   const q = await searchParams;
-  const provider = aiProviderName();
+  const resolved = await resolveAnalyst();
+  const provider = resolved?.analyst.name ?? null;
   const conn = await activeConnection();
   const account = conn?.accounts.find((a) => a.selected) ?? null;
   const history = account ? await listAnalyses() : [];
@@ -56,7 +57,12 @@ export default async function TrafficAiPage({
       {!provider ? (
         <Card className="mt-6">
           <p className="text-base">
-            A IA analista ainda não foi configurada. A equipe técnica precisa da chave da API do Claude.
+            A IA analista ainda não foi configurada. Cadastre a chave de API do Claude ou do ChatGPT da sua
+            empresa em{" "}
+            <Link href="/admin/ia" className="font-bold text-navy underline">
+              Inteligência artificial
+            </Link>
+            .
           </p>
         </Card>
       ) : !account ? (
@@ -78,6 +84,16 @@ export default async function TrafficAiPage({
               DEMO — IA simulada por regras fixas (não é o Claude). Não use para decisões.
             </p>
           ) : null}
+          <p className="mt-4 text-sm text-ink-soft" data-testid="ia-em-uso">
+            IA em uso:{" "}
+            {resolved?.source === "empresa"
+              ? `${resolved.analyst.name === "openai" ? "ChatGPT" : "Claude"} da sua empresa (${resolved.analyst.model})`
+              : "IA da plataforma"}
+            {resolved?.demo ? " · DEMO" : ""} ·{" "}
+            <Link href="/admin/ia" className="font-semibold text-accent-text underline">
+              trocar
+            </Link>
+          </p>
           {canManage ? (
             <Card className="mt-6">
               <h2 className="font-display text-base font-semibold text-ink">Nova análise</h2>
@@ -104,7 +120,11 @@ export default async function TrafficAiPage({
                   </h2>
                   <p className="text-sm text-ink-soft">
                     {when(selected.createdAt)} ·{" "}
-                    {selected.provider === "claude" ? `Claude (${selected.model})` : "simulada"}
+                    {selected.provider === "claude"
+                      ? `Claude (${selected.model})`
+                      : selected.provider === "openai"
+                        ? `ChatGPT (${selected.model})`
+                        : "simulada"}
                     {selected.isDemo ? " · DEMO" : ""}
                   </p>
                 </div>

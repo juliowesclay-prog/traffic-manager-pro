@@ -32,6 +32,12 @@ export const COMPANY_MODELS = new Set([
   "Creative",
   "CreativeVersion",
   "MediaAsset",
+  "MarketingGeneration",
+  "VideoJob",
+  "CanvaConnection",
+  "CanvaOAuthState",
+  "AiCredential",
+  "MetaAdSubmission",
 ]);
 
 const COMPANY_SETTING = /^traffic\./;
@@ -45,7 +51,8 @@ type Args = Record<string, unknown> & {
 
 function scopeSettingKey(args: Args, companyId: string) {
   const fix = (o?: Record<string, unknown>) => {
-    if (o && typeof o.key === "string" && COMPANY_SETTING.test(o.key)) o.key = companySettingKey(companyId, o.key);
+    if (o && typeof o.key === "string" && COMPANY_SETTING.test(o.key))
+      o.key = companySettingKey(companyId, o.key);
   };
   fix(args.where);
   fix(args.create);
@@ -75,7 +82,10 @@ export const prisma = base.$extends({
             break;
           case "createMany":
           case "createManyAndReturn":
-            a.data = (Array.isArray(a.data) ? a.data : [a.data]).map((d) => ({ ...(d as object), companyId }));
+            a.data = (Array.isArray(a.data) ? a.data : [a.data]).map((d) => ({
+              ...(d as object),
+              companyId,
+            }));
             break;
           case "upsert":
             a.where = { ...a.where, companyId };

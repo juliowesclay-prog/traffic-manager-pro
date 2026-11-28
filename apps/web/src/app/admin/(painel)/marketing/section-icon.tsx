@@ -1,6 +1,26 @@
-import { Clapperboard, GalleryHorizontal, Image, Library, MessagesSquare, Palette, Send } from "lucide-react";
+import {
+  Brush,
+  Clapperboard,
+  GalleryHorizontal,
+  Image,
+  Library,
+  MessagesSquare,
+  Palette,
+  Send,
+  TrendingUp,
+} from "lucide-react";
 
-const ICONS = { Clapperboard, GalleryHorizontal, Image, Library, MessagesSquare, Palette, Send };
+const ICONS = {
+  Brush,
+  Clapperboard,
+  GalleryHorizontal,
+  Image,
+  Library,
+  MessagesSquare,
+  Palette,
+  Send,
+  TrendingUp,
+};
 
 export function SectionIcon({ name, className }: { name: keyof typeof ICONS; className?: string }) {
   const Icon = ICONS[name];

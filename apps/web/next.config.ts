@@ -25,7 +25,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../.."),
   transpilePackages: ["@tmp/core", "@tmp/db"],
-  serverExternalPackages: ["@prisma/client", "@node-rs/argon2"],
+  serverExternalPackages: ["@prisma/client", "@node-rs/argon2", "sharp"],
+  // Fontes usadas para desenhar as artes no servidor (lidas do disco em tempo de execução).
+  outputFileTracingIncludes: { "/**": ["../../assets/fonts/*.woff"] },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

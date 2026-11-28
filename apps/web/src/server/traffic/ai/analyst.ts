@@ -1,15 +1,10 @@
 import "server-only";
 import { z } from "zod";
-import {
-  AI_CONFIDENCE,
-  AI_SUGGESTION_TYPES,
-  type AiAnalysisInput,
-  type AiAnalysisOutput,
-} from "@tmp/core";
+import { AI_CONFIDENCE, AI_SUGGESTION_TYPES, type AiAnalysisInput, type AiAnalysisOutput } from "@tmp/core";
 
 /** Analista de tráfego: recebe só números agregados e devolve diagnóstico e sugestões. */
 export interface TrafficAnalyst {
-  name: "claude" | "simulado";
+  name: "claude" | "openai" | "simulado";
   model: string;
   analyze(input: AiAnalysisInput): Promise<{
     output: AiAnalysisOutput;
