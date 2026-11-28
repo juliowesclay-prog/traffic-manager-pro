@@ -51,7 +51,12 @@ test("cadastra a chave do ChatGPT: passo a passo, teste, chave cifrada e auditor
   const form = page.getByTestId("form-chave-ia");
   await form.getByLabel("Qual inteligência artificial sua empresa usa").selectOption("openai");
   await expect(page.getByTestId("passo-a-passo")).toContainText("platform.openai.com");
-  await expect(page.getByTestId("passo-a-passo")).toContainText("login e a senha");
+  await expect(page.getByTestId("passo-a-passo")).toContainText("Login e senha");
+  await expect(page.getByTestId("passo-a-passo")).toContainText("Coloque créditos e um limite de gasto");
+  await expect(page.getByTestId("ia-como-funciona")).toContainText("Antes de começar");
+  await expect(page.getByTestId("ia-custos")).toContainText("só o que usar");
+  await page.getByText("Já pago o ChatGPT Plus ou o Claude Pro. Serve?").click();
+  await expect(page.getByTestId("ia-duvidas")).toContainText("conta de desenvolvedor");
 
   // Chave do Claude no campo do ChatGPT e chave recusada no teste: nada é salvo.
   await form.getByLabel("Chave de API").fill("sk-ant-api03-abcdefghijklmnopqrstuvwxyz");

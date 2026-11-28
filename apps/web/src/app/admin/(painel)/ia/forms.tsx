@@ -35,35 +35,40 @@ export function AiKeyForm({
         ))}
       </SelectField>
 
-      <div className="rounded-xl border border-line bg-canvas p-4" data-testid="passo-a-passo">
-        <p className="font-semibold text-ink">Como gerar a chave de API do {p.label}</p>
-        <ol className="mt-2 grid list-decimal gap-1 pl-5 text-sm">
-          {p.steps.map((s) => (
-            <li key={s}>{s}</li>
+      <div className="grid gap-3" data-testid="passo-a-passo">
+        <p className="font-semibold text-ink">Passo a passo para gerar a chave do {p.label}</p>
+        <ol className="grid gap-3">
+          {p.guide.map((step, i) => (
+            <li key={step.title} className="flex gap-3 rounded-xl border border-line bg-canvas p-4">
+              <span
+                aria-hidden="true"
+                className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent font-display text-sm font-bold text-white"
+              >
+                {i + 1}
+              </span>
+              <div className="grid gap-1">
+                <p className="font-semibold text-ink">
+                  <span className="sr-only">Passo {i + 1}: </span>
+                  {step.title}
+                </p>
+                <p className="text-sm text-ink-soft">{step.detail}</p>
+                {"link" in step && step.link ? (
+                  <a
+                    href={step.link.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-fit text-sm font-semibold text-accent-text underline"
+                  >
+                    {step.link.label} ↗
+                  </a>
+                ) : null}
+              </div>
+            </li>
           ))}
         </ol>
-        <p className="mt-2 text-sm">
-          <a
-            href={p.consoleUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="font-semibold text-accent-text underline"
-          >
-            Abrir a página de chaves
-          </a>
-          {" · "}
-          <a
-            href={p.billingUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="font-semibold text-accent-text underline"
-          >
-            Abrir a cobrança
-          </a>
-        </p>
-        <p className="mt-2 text-sm text-ink-soft">
-          O login e a senha do ChatGPT ou do Claude não servem: a IA só funciona pela chave de API, e o custo
-          é cobrado pelo próprio serviço na conta da sua empresa.
+        <p className="text-sm text-ink-soft">
+          Login e senha do ChatGPT ou do Claude não servem: a conexão é feita só pela chave de API. O uso é
+          cobrado pela {p.company} direto no cartão da sua empresa, conforme o quanto vocês usarem.
         </p>
       </div>
 
