@@ -33,9 +33,6 @@ export default async function StaffPage() {
                   Perfis
                 </th>
                 <th scope="col" className="px-4 py-3">
-                  Autenticador
-                </th>
-                <th scope="col" className="px-4 py-3">
                   Situação
                 </th>
               </tr>
@@ -53,7 +50,6 @@ export default async function StaffPage() {
                     <span className="block text-sm text-ink-soft">{u.email}</span>
                   </td>
                   <td className="px-4 py-3">{u.roles.map((r) => ROLE_LABELS[r.role as Role]).join(", ")}</td>
-                  <td className="px-4 py-3">{u.mfaEnabledAt ? "Configurado" : "Pendente"}</td>
                   <td className="px-4 py-3">
                     {u.status === "BLOCKED" ? (
                       <span className="font-bold text-red-dark">Bloqueado</span>

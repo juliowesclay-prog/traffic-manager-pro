@@ -25,7 +25,7 @@ Fase 0: cópia feita em 27/11/2026 a partir da pasta local do Prosed+ Saúde (ve
 
 | Dependência no Prosed | Como ficou no Traffic Manager Pro |
 |---|---|
-| Login da equipe e permissões | Login próprio (senha + autenticador) e perfis próprios: Superadministrador, Gestor de tráfego, Marketing, Leitura |
+| Login da equipe e permissões | Login próprio (e-mail + senha) e perfis próprios: Superadministrador, Gestor de tráfego, Marketing, Leitura |
 | Auditoria e limite de tentativas | Copiados; a auditoria agora registra a empresa |
 | Componentes visuais e marca | Copiados, com a marca Traffic Manager Pro |
 | Banco e criptografia | Banco próprio (migration única `20261127000000_inicial` + travas `20261127010000_travas`), dados separados por empresa |

@@ -17,8 +17,8 @@ de verdade e nada é cobrado.
 
 ## Entrar
 
-Abra `https://<projeto>.vercel.app/admin/entrar` com o e-mail e a senha do passo 3. No primeiro acesso,
-leia o QR Code com um aplicativo autenticador (Google Authenticator, Microsoft Authenticator).
+Abra `https://<projeto>.vercel.app/admin/entrar` com o e-mail e a senha do passo 3
+(sem código de autenticador).
 
 ## Como funciona
 

@@ -1,7 +1,6 @@
 /**
  * Seed base (todos os ambientes). Pode rodar várias vezes sem duplicar.
  * - Primeiro superadministrador, se SEED_ADMIN_EMAIL e SEED_ADMIN_PASSWORD estiverem no ambiente
- *   (MFA é configurado obrigatoriamente no primeiro acesso).
  * Não cria empresas: o superadministrador cadastra pelo painel (Empresas).
  */
 import { hash } from "@node-rs/argon2";
@@ -27,7 +26,7 @@ async function seedFirstAdmin() {
   await prisma.auditLog.create({
     data: { action: "user.bootstrap_admin", entity: "User", after: { email } },
   });
-  return `admin ${email} criado (configure o MFA no primeiro acesso)`;
+  return `admin ${email} criado`;
 }
 
 async function main() {
