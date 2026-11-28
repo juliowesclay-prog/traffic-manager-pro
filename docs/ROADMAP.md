@@ -30,3 +30,9 @@ Cópia do módulo Gestor de Tráfego do Prosed+ Saúde, sem alterar o original.
   - Etapa 6: Enviar para Meta (anúncio SEMPRE pausado, num conjunto existente, com alerta de política e histórico).
   - Etapa 7: Desempenho (por criativo e por tipo, com vendas reais e período citado).
   - Pendente de contratação/autorização: Cloudflare R2, chave da OpenAI, chave da Anthropic, servidor de vídeo, app do Canva e app real da Meta com ads_management.
+
+## IA do próprio cliente (28/11/2026, aguardando aprovação do merge)
+- Configuração › Inteligência artificial: cada empresa cadastra a chave de API do Claude ou do ChatGPT (passo a passo
+  na tela, teste antes de salvar, chave cifrada, só os 4 últimos caracteres visíveis, auditoria). Tem prioridade sobre a
+  IA da plataforma; removendo, volta para a da plataforma. Só Gestor e Superadmin alteram. Usada na IA analista.
+- Login e senha do ChatGPT/Claude não são usados: os serviços não permitem e a assinatura comum não dá acesso por API.

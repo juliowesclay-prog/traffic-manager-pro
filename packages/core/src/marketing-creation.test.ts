@@ -165,3 +165,23 @@ describe("enviar para Meta", () => {
     });
   });
 });
+
+describe("chave de IA do cliente", () => {
+  it("confere o formato e guarda só os 4 últimos caracteres", async () => {
+    const { parseAiKey, pickModel, chatModels } = await import("./ai-credentials");
+    expect(parseAiKey("gemini", "x".repeat(30)).ok).toBe(false);
+    expect(parseAiKey("claude", "sk-proj-abcdefghijklmnopqrstu").ok).toBe(false);
+    expect(parseAiKey("openai", "sk-ant-abcdefghijklmnopqrstu").ok).toBe(false);
+    expect(parseAiKey("openai", "sk-abc def ghijklmnopqrstuvwxyz").ok).toBe(false);
+    const r = parseAiKey("openai", "  sk-proj-abcdefghijklmnopqrstuWXYZ ");
+    expect(r.ok && r.hint).toBe("WXYZ");
+    expect(pickModel("claude", ["claude-opus-5-5", "claude-sonnet-5-5"], null)).toBe("claude-sonnet-5-5");
+    expect(pickModel("claude", ["claude-opus-5-5", "claude-sonnet-5-5"], "claude-opus-5-5")).toBe(
+      "claude-opus-5-5",
+    );
+    expect(pickModel("openai", ["gpt-9"], "nao-existe")).toBe("gpt-9");
+    expect(
+      chatModels("openai", ["gpt-5", "dall-e-3", "whisper-1", "gpt-5-mini", "text-embedding-3-large"]),
+    ).toEqual(["gpt-5", "gpt-5-mini"]);
+  });
+});

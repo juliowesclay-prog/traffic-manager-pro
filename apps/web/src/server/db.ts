@@ -36,6 +36,7 @@ export const COMPANY_MODELS = new Set([
   "VideoJob",
   "CanvaConnection",
   "CanvaOAuthState",
+  "AiCredential",
   "MetaAdSubmission",
 ]);
 

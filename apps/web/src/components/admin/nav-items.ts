@@ -28,9 +28,7 @@ export const ADMIN_NAV_GROUPS = [
   },
   {
     label: "Criação",
-    items: [
-      { href: "/admin/marketing", label: "Marketing", icon: "Palette", permission: "marketing:read" },
-    ],
+    items: [{ href: "/admin/marketing", label: "Marketing", icon: "Palette", permission: "marketing:read" }],
   },
   {
     label: "Configuração",
@@ -42,6 +40,7 @@ export const ADMIN_NAV_GROUPS = [
         icon: "PlugZap",
         permission: "traffic:read",
       },
+      { href: "/admin/ia", label: "Inteligência artificial", icon: "Bot", permission: "traffic:read" },
       { href: "/admin/empresas", label: "Empresas", icon: "Building2", permission: "companies:manage" },
       { href: "/admin/usuarios", label: "Equipe e acessos", icon: "Users", permission: "users:manage" },
       { href: "/admin/auditoria", label: "Auditoria", icon: "ScrollText", permission: "audit:read" },

@@ -954,3 +954,22 @@ model MetaAdSubmission {
   @@index([companyId, creativeId])
   @@map("meta_ad_submissions")
 }
+
+/// Chave de API de IA da PRÓPRIA empresa (Claude ou ChatGPT). Sem ela, usa a IA da plataforma.
+/// A chave fica cifrada; a tela só mostra os 4 últimos caracteres.
+model AiCredential {
+  id           String    @id @default(uuid()) @db.Uuid
+  companyId    String    @unique @default(dbgenerated("(current_setting('app.company_id'))::uuid")) @db.Uuid
+  /// "claude" ou "openai".
+  provider     String
+  keyEnc       String
+  keyHint      String
+  model        String
+  lastTestedAt DateTime?
+  createdById  String    @db.Uuid
+  updatedById  String    @db.Uuid
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("ai_credentials")
+}

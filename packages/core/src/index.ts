@@ -23,3 +23,4 @@ export * from "./zip";
 export * from "./video";
 export * from "./meta-publish";
 export * from "./creative-performance";
+export * from "./ai-credentials";

@@ -17,7 +17,7 @@ import { audit } from "@/server/audit";
 import { currentCompanyId } from "@/server/tenant";
 import { rateLimit } from "@/server/rate-limit";
 import { trafficDashboard } from "../dashboard";
-import { activeAnalyst, aiProviderName, AnalystError } from "./index";
+import { AnalystError, resolveAnalyst } from "./index";
 
 /**
  * IA analista (entrega 8.5): monta o resumo dos dados (só números agregados), chama o analista,
@@ -52,7 +52,10 @@ export async function buildAnalysisInput(days: number, now = new Date()) {
   if (!d.account) return null;
   const accountId = (await prisma.metaAdAccount.findFirst({ where: { selected: true } }))?.accountId;
   // Contexto para a IA: só o nome da empresa (nenhum dado de cliente).
-  const company = await prisma.company.findUnique({ where: { id: await currentCompanyId() }, select: { name: true } });
+  const company = await prisma.company.findUnique({
+    where: { id: await currentCompanyId() },
+    select: { name: true },
+  });
   const campaigns = await prisma.metaCampaign.findMany({ where: { accountId } });
   const rowOf = new Map(d.salesRows.map((r) => [r.key, r]));
 
@@ -109,8 +112,8 @@ export type AnalysisResult = { ok: true; id: string } | { ok: false; message: st
 
 export async function runAnalysis(userId: string, days: number): Promise<AnalysisResult> {
   if (!(AI_PERIODS as readonly number[]).includes(days)) return { ok: false, message: "Período inválido." };
-  const provider = aiProviderName();
-  if (!provider) return { ok: false, message: "A IA analista ainda não foi configurada." };
+  const resolved = await resolveAnalyst();
+  if (!resolved) return { ok: false, message: "A IA analista ainda não foi configurada." };
   const built = await buildAnalysisInput(days);
   if (!built) return { ok: false, message: "Conecte a Meta e escolha a conta de anúncios primeiro." };
   if (!built.lastSync)
@@ -130,7 +133,7 @@ export async function runAnalysis(userId: string, days: number): Promise<Analysi
     data: { status: "ERRO", error: "Interrompida.", finishedAt: new Date() },
   });
 
-  const analyst = activeAnalyst();
+  const { analyst } = resolved;
   let row;
   try {
     row = await prisma.trafficAnalysis.create({
@@ -140,7 +143,7 @@ export async function runAnalysis(userId: string, days: number): Promise<Analysi
         provider: analyst.name,
         model: analyst.model,
         input: built.input as unknown as Prisma.InputJsonValue,
-        isDemo: built.isDemo || analyst.name === "simulado",
+        isDemo: built.isDemo || resolved.demo,
         createdById: userId,
       },
     });
@@ -184,6 +187,7 @@ export async function runAnalysis(userId: string, days: number): Promise<Analysi
       periodo: days,
       provedor: analyst.name,
       modelo: analyst.model,
+      ia: resolved.source,
       ...(reviewed
         ? { sugestoes: reviewed.sugestoes.length, descartadas: reviewed.descartadas.length }
         : { erro: error }),
